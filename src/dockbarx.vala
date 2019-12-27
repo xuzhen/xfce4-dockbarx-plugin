@@ -114,7 +114,7 @@ public class DockbarXPlugin : PanelPlugin {
             }
             // There should be basically no reason for this to fail.
             try {
-                Process.spawn_command_line_async("/usr/bin/env python2 " +
+                Process.spawn_command_line_async("/usr/bin/env python3 " +
                  "/usr/share/xfce4/panel/plugins/xfce4-dockbarx-plug " +
                  @"-s $socket_id -i $unique_id");
             } catch {

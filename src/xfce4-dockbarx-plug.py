@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 #
 #   xfce4-dockbarx-plug
 #
@@ -25,9 +25,11 @@ sys.stdout = StdOutWrapper()
 import io
 import traceback
 
-import pygtk
-pygtk.require("2.0")
-import gtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository import Gdk
+from gi.repository import GObject
 import cairo
 import dbus
 
@@ -36,9 +38,7 @@ from optparse import OptionParser
 
 # A very minimal plug application that loads DockbarX
 # so that the embed plugin can, well, embed it.
-class DockBarXFCEPlug(gtk.Plug):
-    # We want to do our own expose instead of the default.
-    __gsignals__ = {"expose-event": "override"}
+class DockBarXFCEPlug(Gtk.Plug):
 
     def __init__ (self):
         import dockbarx.dockbar as db
@@ -59,14 +59,15 @@ class DockBarXFCEPlug(gtk.Plug):
         if options.plugin_id == -1:
             sys.exit("We need to know the plugin id of the DBX socket.")
         
-        gtk.Plug.__init__(self, int(options.socket))
+        GObject.GObject.__init__(self)
+        self.construct(int(options.socket))
         self.connect("destroy", self.destroy)
         self.get_settings().connect("notify::gtk-theme-name",self.theme_changed)
         self.set_app_paintable(True)
-        gtk_screen = gtk.gdk.screen_get_default()
-        colormap = gtk_screen.get_rgba_colormap()
-        if colormap is None: colormap = gtk_screen.get_rgb_colormap()
-        self.set_colormap(colormap)
+        gtk_screen = Gdk.Screen.get_default()
+        visual = gtk_screen.get_rgba_visual()
+        if visual is None: visual = gtk_screen.get_system_visual()
+        self.set_visual(visual)
         
         # This should cause the widget to get themed like a panel.
         self.set_name("Xfce4PanelDockBarX")
@@ -77,7 +78,7 @@ class DockBarXFCEPlug(gtk.Plug):
          "org.xfce.Xfconf", "/org/xfce/Xfconf"), "org.xfce.Xfconf")
         self.dbx_prop = "/plugins/plugin-" + options.plugin_id + "/"
         self.panel_prop = [k for (k, v) in
-         self.xfconf.GetAllProperties("xfce4-panel", "/panels").iteritems()
+         self.xfconf.GetAllProperties("xfce4-panel", "/panels").items()
          if "plugin-ids" in k and int(options.plugin_id) in v][0][:-10]
         self.bus.add_signal_receiver(self.xfconf_changed, "PropertyChanged",
          "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
@@ -91,6 +92,9 @@ class DockBarXFCEPlug(gtk.Plug):
         self.dockbar.set_max_size(self.get_size())
         self.show_all()
         self.block_autohide_patch()
+        
+
+        self.connect("draw", self.on_draw)
     
     # Convenience methods.
     def xfconf_get (self, prop_base, prop, default=None):
@@ -116,7 +120,7 @@ class DockBarXFCEPlug(gtk.Plug):
             elif "block-autohide" in prop:
                 pass  # This is one way comm from the plug to the socket.
             elif self.mode == 0 and ("color" in prop or "alpha" in prop):
-                self.color_pattern(gtk.gdk.color_parse(self.xfconf_get_dbx(
+                self.color_pattern(Gdk.color_parse(self.xfconf_get_dbx(
                  "color", "#000")), self.xfconf_get_dbx("alpha", 100))
             elif self.mode == 1 and ("image" in prop or "offset" in prop):
                 self.image_pattern(self.xfconf_get_dbx("image", ""))
@@ -129,14 +133,14 @@ class DockBarXFCEPlug(gtk.Plug):
     def set_block_autohide (self):
         self.xfconf.SetProperty("xfce4-panel", self.dbx_prop +
          "block-autohide", self.dockbar.globals.get_shown_popup() != None or
-          self.dockbar.globals.gtkmenu_showing)
+          self.dockbar.globals.gtkmenu != None)
     
     # Terrible monkey patching... but this allows inhibiting autohide!
     def block_autohide_patch (self):
         import dockbarx.common as com
         def new_setattr (obj, name, value):
             super(com.Globals, obj).__setattr__(name, value)
-            if name in ("gtkmenu_showing", "shown_popup"):
+            if name in ("gtkmenu", "shown_popup"):
                 self.set_block_autohide()
         com.Globals.__setattr__ = new_setattr
     
@@ -150,20 +154,25 @@ class DockBarXFCEPlug(gtk.Plug):
         if self.mode == 1:
             self.image_pattern(self.xfconf_get_dbx("image", ""))
         elif self.mode == 0:
-            self.color_pattern(gtk.gdk.color_parse(self.xfconf_get_dbx(
+            self.color_pattern(Gdk.color_parse(self.xfconf_get_dbx(
              "color", "#000")), self.xfconf_get_dbx("alpha", 100))
         else:
             self.pattern_from_dbus()
     
     def color_pattern (self, color, alpha):
-        if gtk.gdk.screen_get_default().get_rgba_colormap() is None: alpha = 100
+        if Gdk.Screen.get_default().get_rgba_visual() is None: alpha = 100
         self.pattern = cairo.SolidPattern(color.red_float, color.green_float,
          color.blue_float, alpha / 100.0)
 
-    def image_pattern (self, image):
+    def image_pattern (self, image, from_dbus=False):
         self.offset = self.xfconf_get_dbx("offset", 0)
         try:
-            surface = cairo.ImageSurface.create_from_png(image)
+            if str(image).endswith("svg"):
+                # Todo: Get a better height and width. How does xfcepanel handle it?
+                surface = Cairo.SVGSurface(image, self.get_allocation_height(), self.get_allocation_width())
+            else:
+                surface = cairo.ImageSurface.create_from_png(image)
+            
             self.pattern = cairo.SurfacePattern(surface)
             self.pattern.set_extend(cairo.EXTEND_REPEAT)
             tx = self.offset if self.orient in ("up", "down") else 0
@@ -172,8 +181,11 @@ class DockBarXFCEPlug(gtk.Plug):
             self.pattern.set_matrix(matrix)
         except:
             traceback.print_exc()
-            print "Failed to load image."
-            self.pattern_from_dbus()
+            print("Failed to load image.")
+            if from_dbus:
+                self.pattern = None
+            else:
+                self.pattern_from_dbus()
             return
     
     def pattern_from_dbus (self):
@@ -181,13 +193,14 @@ class DockBarXFCEPlug(gtk.Plug):
         image = self.xfconf_get_panel("background-image", "")
         alpha = self.xfconf_get_panel("background-alpha", 100)
         if bgstyle == 2 and os.path.isfile(image):
-            self.image_pattern(image)
+            self.image_pattern(image, from_dbus=True)
         elif bgstyle == 1:
             col = self.xfconf_get_panel("background-color", [0, 0, 0, 0])
-            self.color_pattern(gtk.gdk.Color(col[0], col[1], col[2]), alpha)
+            self.color_pattern(Gdk.Color(col[0], col[1], col[2]), alpha)
         else:
-            style = self.get_style()
-            self.color_pattern(style.bg[gtk.STATE_NORMAL], alpha)
+            # ~ self.pattern = None
+            context = self.get_style_context()
+            self.color_pattern(context.get_background_color(Gtk.StateType.NORMAL).to_color(), alpha)
     
     def get_orient (self):
         self.orient = self.xfconf_get_dbx("orient", "down")
@@ -219,23 +232,25 @@ class DockBarXFCEPlug(gtk.Plug):
         container.show_all()
 
     # Imitates xfce4-panel's expose event.
-    def do_expose_event (self, event):
-        self.window.set_back_pixmap(None, False)
-        ctx = self.window.cairo_create()
+    def on_draw (self, widget, ctx):
+        a = widget.get_allocation()
+        if self. pattern is None:
+            context = widget.get_style_context()
+            Gtk.render_background(context, ctx, a.x, a.y, a.width, a.height)
+            return
+        ctx.save()
         ctx.set_antialias(cairo.ANTIALIAS_NONE)
         ctx.set_operator(cairo.OPERATOR_SOURCE)
-        ctx.rectangle(event.area.x, event.area.y,
-                      event.area.width, event.area.height)
+        ctx.rectangle(a.x, a.y, a.width, a.height)
         ctx.clip()
         ctx.set_source(self.pattern)
         ctx.paint()
-        if self.get_child():
-            self.propagate_expose(self.get_child(), event)
+        ctx.restore()
 
     def destroy (self, widget, data=None):
-        gtk.main_quit()
+        Gtk.main_quit()
 
 
 if __name__ == '__main__':
     dbx = DockBarXFCEPlug()
-    gtk.main()
+    Gtk.main()
