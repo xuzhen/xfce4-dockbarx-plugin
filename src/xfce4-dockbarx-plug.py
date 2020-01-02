@@ -58,7 +58,7 @@ class DockBarXFCEPlug(Gtk.Plug):
             sys.exit("This program needs to be run by the XFCE DBX plugin.")
         if options.plugin_id == -1:
             sys.exit("We need to know the plugin id of the DBX socket.")
-        
+
         GObject.GObject.__init__(self)
         self.construct(int(options.socket))
         self.connect("destroy", self.destroy)
@@ -68,7 +68,7 @@ class DockBarXFCEPlug(Gtk.Plug):
         visual = gtk_screen.get_rgba_visual()
         if visual is None: visual = gtk_screen.get_system_visual()
         self.set_visual(visual)
-        
+
         # This should cause the widget to get themed like a panel.
         self.set_name("Xfce4PanelDockBarX")
         self.show()
@@ -82,7 +82,7 @@ class DockBarXFCEPlug(Gtk.Plug):
          if "plugin-ids" in k and int(options.plugin_id) in v][0][:-10]
         self.bus.add_signal_receiver(self.xfconf_changed, "PropertyChanged",
          "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
-        
+
         self.dockbar = db.DockBar(self)
         self.dockbar.set_orient(self.get_orient())
         self.config_bg()
@@ -92,10 +92,10 @@ class DockBarXFCEPlug(Gtk.Plug):
         self.dockbar.set_max_size(self.get_size())
         self.show_all()
         self.block_autohide_patch()
-        
+
 
         self.connect("draw", self.on_draw)
-    
+
     # Convenience methods.
     def xfconf_get (self, prop_base, prop, default=None):
         if self.xfconf.PropertyExists("xfce4-panel", prop_base + prop):
@@ -107,7 +107,7 @@ class DockBarXFCEPlug(Gtk.Plug):
         return self.xfconf_get(self.dbx_prop, prop, default)
     def xfconf_get_panel (self, prop, default=None):
         return self.xfconf_get(self.panel_prop, prop, default)
-    
+
     def xfconf_changed (self, channel, prop, val):
         if channel != "xfce4-panel": return
         if self.panel_prop in prop and self.mode == 2:
@@ -127,14 +127,14 @@ class DockBarXFCEPlug(Gtk.Plug):
             else:
                 self.pattern_from_dbus()
         self.queue_draw()
-    
+
     # The only function that sets anything in xfconf. It's a lazy way to
     # communicate with the vala socket, but it does work!
     def set_block_autohide (self):
         self.xfconf.SetProperty("xfce4-panel", self.dbx_prop +
          "block-autohide", self.dockbar.globals.get_shown_popup() != None or
           self.dockbar.globals.gtkmenu != None)
-    
+
     # Terrible monkey patching... but this allows inhibiting autohide!
     def block_autohide_patch (self):
         import dockbarx.common as com
@@ -143,12 +143,12 @@ class DockBarXFCEPlug(Gtk.Plug):
             if name in ("gtkmenu", "shown_popup"):
                 self.set_block_autohide()
         com.Globals.__setattr__ = new_setattr
-    
+
     def theme_changed (self, obj=None, prop=None):
         if self.mode == 2:
             self.pattern_from_dbus()
             self.queue_draw()
-    
+
     def config_bg (self):
         self.mode = self.xfconf_get_dbx("mode", 2)
         if self.mode == 1:
@@ -158,7 +158,7 @@ class DockBarXFCEPlug(Gtk.Plug):
              "color", "#000")), self.xfconf_get_dbx("alpha", 100))
         else:
             self.pattern_from_dbus()
-    
+
     def color_pattern (self, color, alpha):
         if Gdk.Screen.get_default().get_rgba_visual() is None: alpha = 100
         self.pattern = cairo.SolidPattern(color.red_float, color.green_float,
@@ -172,7 +172,7 @@ class DockBarXFCEPlug(Gtk.Plug):
                 surface = Cairo.SVGSurface(image, self.get_allocation_height(), self.get_allocation_width())
             else:
                 surface = cairo.ImageSurface.create_from_png(image)
-            
+
             self.pattern = cairo.SurfacePattern(surface)
             self.pattern.set_extend(cairo.EXTEND_REPEAT)
             tx = self.offset if self.orient in ("up", "down") else 0
@@ -187,7 +187,7 @@ class DockBarXFCEPlug(Gtk.Plug):
             else:
                 self.pattern_from_dbus()
             return
-    
+
     def pattern_from_dbus (self):
         bgstyle = self.xfconf_get_panel("background-style", 0)
         image = self.xfconf_get_panel("background-image", "")
@@ -198,13 +198,11 @@ class DockBarXFCEPlug(Gtk.Plug):
             col = self.xfconf_get_panel("background-color", [0, 0, 0, 0])
             self.color_pattern(Gdk.Color(col[0], col[1], col[2]), alpha)
         else:
-            # ~ self.pattern = None
-            context = self.get_style_context()
-            self.color_pattern(context.get_background_color(Gtk.StateType.NORMAL).to_color(), alpha)
-    
+            self.pattern = None
+
     def get_orient (self):
         self.orient = self.xfconf_get_dbx("orient", "down")
-        
+
         # Let's make sure our parameters are actually valid.
         if not (self.orient == "bottom" or self.orient == "top" or
          self.orient == "down" or self.orient == "up" or
@@ -214,15 +212,15 @@ class DockBarXFCEPlug(Gtk.Plug):
         # Change it to DBX-specific terminology.
         if self.orient == "bottom": self.orient = "down"
         if self.orient == "top": self.orient = "up"
-        
+
         return self.orient
-    
+
     def get_size (self):
         max_size = self.xfconf_get_dbx("max-size", 0)
         if max_size < 1: max_size = 32767
         self.expand = self.xfconf_get_dbx("expand", False)
         return max_size
-    
+
     # Dockbar calls back with this function when it is reloaded
     # since the old container has been destroyed in the reload
     # and needs to be added again.
