@@ -71,6 +71,8 @@ class DockBarXFCEPlug(Gtk.Plug):
 
         # This should cause the widget to get themed like a panel.
         self.set_name("Xfce4PanelDockBarX")
+        style_context = self.get_style_context()
+        style_context.add_class("xfce4-panel")
         self.show()
 
         self.bus = dbus.SessionBus()
