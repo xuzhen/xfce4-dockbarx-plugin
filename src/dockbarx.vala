@@ -69,15 +69,15 @@ public class DockbarXPlugin : PanelPlugin {
         expand = xfc.get_bool("/expand", false);
         block_ah = xfc.get_bool("/block-autohide", false);
         
-        Property.bind(xfc, "/mode", typeof(int), this, "bgmode");
-        Property.bind(xfc, "/color", typeof(string), this, "color");
-        Property.bind(xfc, "/alpha", typeof(int), this, "alpha");
-        Property.bind(xfc, "/image", typeof(string), this, "image");
-        Property.bind(xfc, "/offset", typeof(int), this, "offset");
-        Property.bind(xfc, "/max-size", typeof(int), this, "max-size");
-        Property.bind(xfc, "/orient", typeof(string), this, "orient");
-        Property.bind(xfc, "/expand", typeof(bool), this, "expand");
-        Property.bind(xfc, "/block-autohide", typeof(bool), this, "block_ah");
+        Xfconf.property_bind(xfc, "/mode", typeof(int), this, "bgmode");
+        Xfconf.property_bind(xfc, "/color", typeof(string), this, "color");
+        Xfconf.property_bind(xfc, "/alpha", typeof(int), this, "alpha");
+        Xfconf.property_bind(xfc, "/image", typeof(string), this, "image");
+        Xfconf.property_bind(xfc, "/offset", typeof(int), this, "offset");
+        Xfconf.property_bind(xfc, "/max-size", typeof(int), this, "max-size");
+        Xfconf.property_bind(xfc, "/orient", typeof(string), this, "orient");
+        Xfconf.property_bind(xfc, "/expand", typeof(bool), this, "expand");
+        Xfconf.property_bind(xfc, "/block-autohide", typeof(bool), this, "block_ah");
 
         socket = new Gtk.Socket();
         add(socket);

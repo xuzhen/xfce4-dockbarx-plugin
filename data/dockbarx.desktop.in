@@ -7,3 +7,4 @@ Icon=dockbarx
 X-XFCE-Unique=true
 X-XFCE-Module=dockbarx
 X-XFCE-Internal=false
+X-XFCE-API=2.0

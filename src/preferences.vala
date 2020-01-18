@@ -29,7 +29,7 @@ class PrefDialog : Dialog {
     private RadioButton       image_radio;
     private RadioButton       blend_radio;
     private ColorButton       color_button;
-    private HScale            alpha_scale;
+    private Scale            alpha_scale;
     private FileChooserButton image_button;
     private SpinButton        offset_spin;
     private SpinButton        max_size_spin;
@@ -39,8 +39,9 @@ class PrefDialog : Dialog {
         this.plugin = plugin;
         title = "DockbarX Preferences";
         response.connect((i) => { destroy(); });
-        unowned VBox content = get_content_area() as VBox;
-        content.spacing = 12;
+        unowned Box content = get_content_area() as Box;
+        content.spacing	 = 12;
+        content.orientation = Orientation.VERTICAL;
 
         color_radio = new RadioButton.with_label(null, "Solid color");
         image_radio = new RadioButton.with_label_from_widget(
@@ -48,7 +49,7 @@ class PrefDialog : Dialog {
         blend_radio = new RadioButton.with_label_from_widget(
          image_radio, "Blend with panel");
         color_button = new ColorButton();
-        alpha_scale = new HScale.with_range(0, 100, 1);
+        alpha_scale = new Scale.with_range(Orientation.HORIZONTAL, 0, 100, 1);
         alpha_scale.value_pos = PositionType.RIGHT;
         image_button = new FileChooserButton("Select background image",
          FileChooserAction.OPEN);
@@ -72,36 +73,34 @@ class PrefDialog : Dialog {
         var image_frame = new Frame(null);
         image_frame.label_widget = image_radio;
 
-        var orient_box = new HBox(false, 8);
+        var orient_box = new Box(Orientation.HORIZONTAL, 8);
         orient_box.pack_start(bottom_radio, true, true);
         orient_box.pack_start(top_radio, true, true);
         orient_frame.add(orient_box);
 
-        var color_table = new Table(2, 2, false);
-        color_table.column_spacing = 8;
+        var color_table = new Grid();
+        color_table.set_column_spacing( 8 );
         var color_label = new Label("Color:");
         var alpha_label = new Label("Alpha:");
-        color_table.attach(color_label, 0, 1, 0, 1, 0, 0, 0, 0);
-        color_table.attach(alpha_label, 0, 1, 1, 2, 0, 0, 0, 0);
-        color_table.attach(color_button, 1, 2, 0, 1, AttachOptions.EXPAND |
-         AttachOptions.FILL, 0, 0, 0);
-        color_table.attach(alpha_scale, 1, 2, 1, 2, AttachOptions.EXPAND |
-         AttachOptions.FILL, 0, 0, 0);
+        color_table.attach(color_label, 0, 0, 1, 1);
+        color_table.attach(alpha_label, 0, 1, 1, 1);
+        color_table.attach(color_button, 1, 0, 1, 1);
+        color_table.attach(alpha_scale, 1, 1, 1, 1);
         color_frame.add(color_table);
 
-        var image_table = new Table(2, 2, false);
-        image_table.column_spacing = 8;
+        var image_table = new Grid();
+        image_table.set_column_spacing( 8 );
         var image_label = new Label("Image:");
         var offset_label = new Label("Offset:");
-        image_table.attach(image_label, 0, 1, 0, 1, 0, 0, 0, 0);
-        image_table.attach(offset_label, 0, 1, 1, 2, 0, 0, 0, 0);
-        image_table.attach(image_button, 1, 2, 0, 1, AttachOptions.EXPAND |
-         AttachOptions.FILL, 0, 0, 0);
-        image_table.attach(offset_spin, 1, 2, 1, 2, AttachOptions.EXPAND |
-         AttachOptions.FILL, 0, 0, 0);
+        image_table.attach(image_label, 0, 0, 1, 1); //, 0, 0, 0, 0);
+        image_table.attach(offset_label, 0, 1, 3, 1); //, 0, 0, 0, 0);
+        image_table.attach(image_button, 1, 0, 1, 1); //, AttachOptions.EXPAND |
+        //AttachOptions.FILL, 0, 0, 0);
+        image_table.attach(offset_spin, 1, 1, 3, 1); //, AttachOptions.EXPAND |
+        //AttachOptions.FILL, 0, 0, 0);
         image_frame.add(image_table);
         
-        var size_box = new HBox(false, 2);
+        var size_box = new Box(Orientation.HORIZONTAL, 2);
         size_box.pack_start(new Label("Max size:"));
         size_box.pack_start(max_size_spin);
         size_box.pack_start(expand_check);
