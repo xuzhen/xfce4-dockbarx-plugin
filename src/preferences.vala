@@ -84,8 +84,10 @@ class PrefDialog : Dialog {
         var alpha_label = new Label("Alpha:");
         color_table.attach(color_label, 0, 0, 1, 1);
         color_table.attach(alpha_label, 0, 1, 1, 1);
+        color_button.set_hexpand(false);
         color_table.attach(color_button, 1, 0, 1, 1);
-        color_table.attach(alpha_scale, 1, 1, 1, 1);
+        alpha_scale.set_hexpand(true);
+        color_table.attach(alpha_scale, 1, 1, 5, 1);
         color_frame.add(color_table);
 
         var image_table = new Grid();
@@ -93,10 +95,10 @@ class PrefDialog : Dialog {
         var image_label = new Label("Image:");
         var offset_label = new Label("Offset:");
         image_table.attach(image_label, 0, 0, 1, 1); //, 0, 0, 0, 0);
-        image_table.attach(offset_label, 0, 1, 3, 1); //, 0, 0, 0, 0);
-        image_table.attach(image_button, 1, 0, 1, 1); //, AttachOptions.EXPAND |
+        image_table.attach(offset_label, 0, 1, 1, 1); //, 0, 0, 0, 0);
+        image_table.attach(image_button, 1, 0, 3, 1); //, AttachOptions.EXPAND |
         //AttachOptions.FILL, 0, 0, 0);
-        image_table.attach(offset_spin, 1, 1, 3, 1); //, AttachOptions.EXPAND |
+        image_table.attach(offset_spin, 1, 1, 1, 1); //, AttachOptions.EXPAND |
         //AttachOptions.FILL, 0, 0, 0);
         image_frame.add(image_table);
         
