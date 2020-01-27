@@ -110,7 +110,7 @@ class PrefDialog : Dialog {
         content.pack_start(color_frame);
         content.pack_start(image_frame);
         content.pack_start(size_box);
-        add_button(Stock.CLOSE, ResponseType.CLOSE);
+        add_button(_("_Close"), ResponseType.CLOSE);
 
         bottom_radio.active = plugin.orient == "bottom" ||
          plugin.orient == "left";
@@ -118,9 +118,9 @@ class PrefDialog : Dialog {
         color_radio.active = plugin.bgmode == 0;
         image_radio.active = plugin.bgmode == 1;
         blend_radio.active = plugin.bgmode == 2;
-        Gdk.Color color;
-        Gdk.Color.parse(plugin.color, out color);
-        color_button.color = color;
+        var color = Gdk.RGBA();
+        color.parse(plugin.color);
+        color_button.rgba = color;
         alpha_scale.set_value(plugin.alpha);
         image_button.set_filename(plugin.image);
         offset_spin.value = plugin.offset;
@@ -151,7 +151,7 @@ class PrefDialog : Dialog {
             plugin.bgmode = blend_radio.active ? 2 : color_radio.active ? 0 : 1;
         });
         color_button.color_set.connect(() => {
-            plugin.color = color_button.color.to_string();
+            plugin.color = color_button.rgba.to_string();
         });
         alpha_scale.value_changed.connect(() => {
             plugin.alpha = (int)alpha_scale.get_value();

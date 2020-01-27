@@ -55,8 +55,11 @@ public class DockbarXPlugin : PanelPlugin {
         // This program does one thing, and one thing only:
         // Embeds the already-made DockBarX using the helper
         // application, xfce4-dockbarx-plug.
-        
-        Xfconf.init();
+        try {
+            Xfconf.init();
+        } catch (GLib.Error e) {
+            print("Failed to init XfConf: %s", e.message);
+        }
         xfc = new Channel.with_property_base("xfce4-panel",get_property_base());
         
         bgmode = xfc.get_int("/bgmode", 2);
