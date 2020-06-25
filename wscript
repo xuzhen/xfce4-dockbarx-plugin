@@ -58,6 +58,7 @@ def build (ctx):
     ctx.program(
         features     = 'c cshlib',
         is_lib       = True,
+        vapi_dirs    = 'vapi',
         source       = ctx.path.ant_glob('src/*.vala'),
         packages     = 'glib-2.0 gtk+-3.0 libxfce4panel-2.0 libxfconf-0',
         target       = 'dockbarx',
