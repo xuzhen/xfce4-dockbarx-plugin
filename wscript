@@ -48,9 +48,9 @@ def configure (ctx):
         uselib_store = 'GLIB', mandatory = True, args = args)
     ctx.check_cfg(package = 'gtk+-3.0', atleast_version = '3.22',
         uselib_store = 'GTK', mandatory = True, args = args)
-    ctx.check_cfg(package = 'libxfce4panel-2.0', atleast_version = '4.14',
+    ctx.check_cfg(package = 'libxfce4panel-2.0', atleast_version = '4.12',
         uselib_store = 'XFCE4PANEL', mandatory = True, args = args)
-    ctx.check_cfg(package = 'libxfconf-0', atleast_version = '4.14',
+    ctx.check_cfg(package = 'libxfconf-0', atleast_version = '4.12',
         uselib_store = 'XFCONF', mandatory = True, args = args)
 
 def build (ctx):
