@@ -43,7 +43,6 @@ def configure (ctx):
     ctx.load('vala')
     ctx.env.append_value('CFLAGS', '-DGETTEXT_PACKAGE="gtk30"')
     args = '--cflags --libs'
-    ctx.find_program('dockx')
     ctx.check_cfg(package = 'glib-2.0', atleast_version = '2.42',
         uselib_store = 'GLIB', mandatory = True, args = args)
     ctx.check_cfg(package = 'gtk+-3.0', atleast_version = '3.22',
