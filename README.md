@@ -24,11 +24,11 @@ Some distros already have it packaged in some form:
 
 If you want to (or have to) install from source, you need the following dependencies:
 
-* Vala >= 0.12
-* GLib >= 2.10
-* GTK+2 >= 2.16
-* Xfce4-Panel >= 4.8
-* Xfconf >= 4.8
+* Vala >= 0.36.0
+* GLib >= 2.42
+* GTK+3 >= 3.22
+* Xfce4-Panel >= 4.14
+* Xfconf >= 4.14
 * DockbarX >= 0.49
 
 To configure, build, and install, run these commands:

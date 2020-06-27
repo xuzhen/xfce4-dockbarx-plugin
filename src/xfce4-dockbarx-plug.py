@@ -34,6 +34,7 @@ import cairo
 import dbus
 
 from optparse import OptionParser
+import os
 
 
 # A very minimal plug application that loads DockbarX
