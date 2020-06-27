@@ -1,5 +1,5 @@
 # xfce4-dockbarx-plugin
-### ver. 0.5
+### ver. 0.6
 
 ## About xfce4-dockbarx-plugin
 xfce4-dockbarx-plugin is free software. Please see the file COPYING for details. For building and installation instructions please see the INSTALL file. For information on the authors of this program, see AUTHORS and THANKS.
@@ -27,9 +27,9 @@ If you want to (or have to) install from source, you need the following dependen
 * Vala >= 0.36.0
 * GLib >= 2.42
 * GTK+3 >= 3.22
-* Xfce4-Panel >= 4.14
-* Xfconf >= 4.14
-* DockbarX >= 0.49
+* Xfce4-Panel >= 4.12
+* Xfconf >= 4.12
+* DockbarX >= 1.0-beta
 
 To configure, build, and install, run these commands:
 
