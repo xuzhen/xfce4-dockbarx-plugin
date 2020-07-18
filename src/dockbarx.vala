@@ -35,7 +35,6 @@ public class DockbarXPlugin : PanelPlugin {
     private bool         starting_dbx = false;
     public  int          bgmode      { get; set; }
     public  string       color       { get; set; }
-    public  int          alpha       { get; set; }
     public  string       image       { get; set; }
     public  int          offset      { get; set; }
     public  int          max_size    { get; set; }
@@ -64,7 +63,6 @@ public class DockbarXPlugin : PanelPlugin {
         
         bgmode = xfc.get_int("/bgmode", 2);
         color = xfc.get_string("/color", "#000");
-        alpha = xfc.get_int("/alpha", 100);
         image = xfc.get_string("/image", "");
         offset = xfc.get_int("/offset", 0);
         max_size = xfc.get_int("/max-size", 0);
@@ -74,7 +72,6 @@ public class DockbarXPlugin : PanelPlugin {
         
         Xfconf.property_bind(xfc, "/mode", typeof(int), this, "bgmode");
         Xfconf.property_bind(xfc, "/color", typeof(string), this, "color");
-        Xfconf.property_bind(xfc, "/alpha", typeof(int), this, "alpha");
         Xfconf.property_bind(xfc, "/image", typeof(string), this, "image");
         Xfconf.property_bind(xfc, "/offset", typeof(int), this, "offset");
         Xfconf.property_bind(xfc, "/max-size", typeof(int), this, "max-size");

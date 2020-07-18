@@ -29,6 +29,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GdkPixbuf
 from gi.repository import GObject
 import cairo
 import dbus
@@ -123,8 +124,9 @@ class DockBarXFCEPlug(Gtk.Plug):
             elif "block-autohide" in prop:
                 pass  # This is one way comm from the plug to the socket.
             elif self.mode == 0 and ("color" in prop or "alpha" in prop):
-                self.color_pattern(Gdk.color_parse(self.xfconf_get_dbx(
-                 "color", "#000")), self.xfconf_get_dbx("alpha", 100))
+                color = Gdk.RGBA()
+                color.parse(self.xfconf_get_dbx("color", "#000"))
+                self.color_pattern(color)
             elif self.mode == 1 and ("image" in prop or "offset" in prop):
                 self.image_pattern(self.xfconf_get_dbx("image", ""))
             else:
@@ -157,25 +159,22 @@ class DockBarXFCEPlug(Gtk.Plug):
         if self.mode == 1:
             self.image_pattern(self.xfconf_get_dbx("image", ""))
         elif self.mode == 0:
-            self.color_pattern(Gdk.color_parse(self.xfconf_get_dbx(
-             "color", "#000")), self.xfconf_get_dbx("alpha", 100))
+            color = Gdk.RGBA()
+            color.parse(self.xfconf_get_dbx("color", "#000"))
+            self.color_pattern(color)
         else:
             self.pattern_from_dbus()
 
-    def color_pattern (self, color, alpha):
-        if Gdk.Screen.get_default().get_rgba_visual() is None: alpha = 100
-        self.pattern = cairo.SolidPattern(color.red_float, color.green_float,
-         color.blue_float, alpha / 100.0)
+    def color_pattern (self, color):
+        if Gdk.Screen.get_default().get_rgba_visual() is None:
+            color.alpha = 1
+        self.pattern = cairo.SolidPattern(color.red, color.green, color.blue, color.alpha)
 
     def image_pattern (self, image, from_dbus=False):
         self.offset = self.xfconf_get_dbx("offset", 0)
         try:
-            if str(image).endswith("svg"):
-                # Todo: Get a better height and width. How does xfcepanel handle it?
-                surface = Cairo.SVGSurface(image, self.get_allocation_height(), self.get_allocation_width())
-            else:
-                surface = cairo.ImageSurface.create_from_png(image)
-
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(image)
+            surface = Gdk.cairo_surface_create_from_pixbuf(pixbuf, 0)
             self.pattern = cairo.SurfacePattern(surface)
             self.pattern.set_extend(cairo.EXTEND_REPEAT)
             tx = self.offset if self.orient in ("up", "down") else 0
@@ -194,12 +193,16 @@ class DockBarXFCEPlug(Gtk.Plug):
     def pattern_from_dbus (self):
         bgstyle = self.xfconf_get_panel("background-style", 0)
         image = self.xfconf_get_panel("background-image", "")
-        alpha = self.xfconf_get_panel("background-alpha", 100)
         if bgstyle == 2 and os.path.isfile(image):
             self.image_pattern(image, from_dbus=True)
         elif bgstyle == 1:
-            col = self.xfconf_get_panel("background-color", [0, 0, 0, 0])
-            self.color_pattern(Gdk.Color(col[0], col[1], col[2]), alpha)
+            col = self.xfconf_get_panel("background-rgba", None)
+            if col is None:
+                # xfce4-panel < 4.14
+                col = self.xfconf_get_panel("background-color", [0, 0, 0, 0])
+                col = [v / 65535.0 for v in col]
+                col[3] = self.xfconf_get_panel("background-alpha", 100) / 100.0
+            self.color_pattern(Gdk.RGBA(col[0], col[1], col[2], col[3]))
         else:
             self.pattern = None
 

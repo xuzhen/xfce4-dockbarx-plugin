@@ -29,7 +29,6 @@ class PrefDialog : Dialog {
     private RadioButton       image_radio;
     private RadioButton       blend_radio;
     private ColorButton       color_button;
-    private Scale            alpha_scale;
     private FileChooserButton image_button;
     private SpinButton        offset_spin;
     private SpinButton        max_size_spin;
@@ -40,7 +39,7 @@ class PrefDialog : Dialog {
         title = "DockbarX Preferences";
         response.connect((i) => { destroy(); });
         unowned Box content = get_content_area() as Box;
-        content.spacing	 = 12;
+        content.spacing = 12;
         content.orientation = Orientation.VERTICAL;
 
         color_radio = new RadioButton.with_label(null, "Solid color");
@@ -49,8 +48,6 @@ class PrefDialog : Dialog {
         blend_radio = new RadioButton.with_label_from_widget(
          image_radio, "Blend with panel");
         color_button = new ColorButton();
-        alpha_scale = new Scale.with_range(Orientation.HORIZONTAL, 0, 100, 1);
-        alpha_scale.value_pos = PositionType.RIGHT;
         image_button = new FileChooserButton("Select background image",
          FileChooserAction.OPEN);
         offset_spin = new SpinButton.with_range(-32767, 32767, 1);
@@ -81,25 +78,22 @@ class PrefDialog : Dialog {
         var color_table = new Grid();
         color_table.set_column_spacing( 8 );
         var color_label = new Label("Color:");
-        var alpha_label = new Label("Alpha:");
         color_table.attach(color_label, 0, 0, 1, 1);
-        color_table.attach(alpha_label, 0, 1, 1, 1);
-        color_button.set_hexpand(false);
+        color_button.set_hexpand(true);
+        ((Gtk.ColorChooser) color_button).set_use_alpha(true);
         color_table.attach(color_button, 1, 0, 1, 1);
-        alpha_scale.set_hexpand(true);
-        color_table.attach(alpha_scale, 1, 1, 5, 1);
         color_frame.add(color_table);
 
         var image_table = new Grid();
         image_table.set_column_spacing( 8 );
         var image_label = new Label("Image:");
         var offset_label = new Label("Offset:");
-        image_table.attach(image_label, 0, 0, 1, 1); //, 0, 0, 0, 0);
-        image_table.attach(offset_label, 0, 1, 1, 1); //, 0, 0, 0, 0);
-        image_table.attach(image_button, 1, 0, 3, 1); //, AttachOptions.EXPAND |
-        //AttachOptions.FILL, 0, 0, 0);
-        image_table.attach(offset_spin, 1, 1, 1, 1); //, AttachOptions.EXPAND |
-        //AttachOptions.FILL, 0, 0, 0);
+        image_table.attach(image_label, 0, 0, 1, 1);
+        image_table.attach(offset_label, 0, 1, 1, 1);
+        image_button.set_hexpand(true);
+        image_table.attach(image_button, 1, 0, 1, 1);
+        offset_spin.set_hexpand(true);
+        image_table.attach(offset_spin, 1, 1, 1, 1);
         image_frame.add(image_table);
         
         var size_box = new Box(Orientation.HORIZONTAL, 2);
@@ -123,7 +117,6 @@ class PrefDialog : Dialog {
         var color = Gdk.RGBA();
         color.parse(plugin.color);
         color_button.rgba = color;
-        alpha_scale.set_value(plugin.alpha);
         image_button.set_filename(plugin.image);
         offset_spin.value = plugin.offset;
         max_size_spin.value = plugin.max_size;
@@ -154,9 +147,6 @@ class PrefDialog : Dialog {
         });
         color_button.color_set.connect(() => {
             plugin.color = color_button.rgba.to_string();
-        });
-        alpha_scale.value_changed.connect(() => {
-            plugin.alpha = (int)alpha_scale.get_value();
         });
         image_button.file_set.connect(() => {
             plugin.image = image_button.get_filename();
