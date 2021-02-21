@@ -252,6 +252,8 @@ class DockBarXFCEPlug(Gtk.Plug):
         ctx.restore()
 
     def destroy (self, widget, data=None):
+        if hasattr(self.dockbar, "destroy"):
+            self.dockbar.destroy()
         Gtk.main_quit()
 
 
