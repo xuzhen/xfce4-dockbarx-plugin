@@ -39,7 +39,7 @@ def configure (ctx):
 
     # Check for required stuff.
     ctx.load('compiler_c')
-    ctx.env.VALA_MINVER = (0, 36, 0)
+    ctx.env.VALA_MINVER = (0, 42, 0)
     ctx.load('vala')
     ctx.env.append_value('CFLAGS', '-DGETTEXT_PACKAGE="gtk30"')
     args = '--cflags --libs'
