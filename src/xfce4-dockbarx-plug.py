@@ -30,7 +30,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
-from gi.repository import GObject
 import cairo
 import dbus
 
@@ -42,8 +41,9 @@ import os
 # so that the embed plugin can, well, embed it.
 class DockBarXFCEPlug(Gtk.Plug):
 
-    def __init__ (self):
+    def __init__ (self, app):
         import dockbarx.dockbar as db
+        self.app = app
         self.bus = None
         self.xfconf = None
         self.dbx_prop = None
@@ -61,7 +61,7 @@ class DockBarXFCEPlug(Gtk.Plug):
         if options.plugin_id == -1:
             sys.exit("We need to know the plugin id of the DBX socket.")
 
-        GObject.GObject.__init__(self)
+        Gtk.Plug.__init__(self)
         self.construct(int(options.socket))
         self.connect("destroy", self.destroy)
         self.get_settings().connect("notify::gtk-theme-name",self.theme_changed)
@@ -254,9 +254,10 @@ class DockBarXFCEPlug(Gtk.Plug):
     def destroy (self, widget, data=None):
         if hasattr(self.dockbar, "destroy"):
             self.dockbar.destroy()
-        Gtk.main_quit()
+        self.app.quit()
 
 
 if __name__ == '__main__':
-    dbx = DockBarXFCEPlug()
-    Gtk.main()
+    app = Gtk.Application(application_id="org.dockbarx.xfce4panel.plugin")
+    app.connect("activate", lambda e: app.add_window(DockBarXFCEPlug(app)))
+    app.run()
