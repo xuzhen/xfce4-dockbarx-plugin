@@ -30,8 +30,10 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
+from gi.repository import GLib
 import cairo
 import dbus
+import signal
 
 from optparse import OptionParser
 import os
@@ -259,5 +261,7 @@ class DockBarXFCEPlug(Gtk.Plug):
 
 if __name__ == '__main__':
     app = Gtk.Application(application_id="org.dockbarx.xfce4panel.plugin")
-    app.connect("activate", lambda e: app.add_window(DockBarXFCEPlug(app)))
+    window = DockBarXFCEPlug(app)
+    app.connect("activate", lambda e: app.add_window(window))
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, lambda: window.destroy(window))
     app.run()
