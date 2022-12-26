@@ -80,14 +80,17 @@ class DockBarXFCEPlug(Gtk.Plug):
         self.show()
 
         self.bus = dbus.SessionBus()
-        self.xfconf = dbus.Interface(self.bus.get_object(
-         "org.xfce.Xfconf", "/org/xfce/Xfconf"), "org.xfce.Xfconf")
+        self.connect_xfconf_dbus()
         self.dbx_prop = "/plugins/plugin-" + options.plugin_id + "/"
         self.panel_prop = [k for (k, v) in
          self.xfconf.GetAllProperties("xfce4-panel", "/panels").items()
          if "plugin-ids" in k and int(options.plugin_id) in v][0][:-10]
-        self.bus.add_signal_receiver(self.xfconf_changed, "PropertyChanged",
-         "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
+
+        fdo = self.bus.get_object("org.freedesktop.DBus",
+                                  "/org/freedesktop/DBus")
+        fdo.connect_to_signal("NameOwnerChanged",
+                              self.xfconf_dbus_changed,
+                              dbus_interface="org.freedesktop.DBus")
 
         self.dockbar = db.DockBar(self)
         self.dockbar.set_orient(self.get_orient())
@@ -101,6 +104,23 @@ class DockBarXFCEPlug(Gtk.Plug):
 
 
         self.connect("draw", self.on_draw)
+
+    def connect_xfconf_dbus(self):
+        self.xfconf = dbus.Interface(self.bus.get_object(
+         "org.xfce.Xfconf", "/org/xfce/Xfconf"), "org.xfce.Xfconf")
+        self.bus.add_signal_receiver(self.xfconf_changed, "PropertyChanged",
+         "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
+
+    def disconnect_xfconf_dbus(self):
+        self.bus.remove_signal_receiver(self.xfconf_changed, "PropertyChanged",
+         "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
+
+    def xfconf_dbus_changed(self, name, previous_owner, current_owner):
+        if str(name) == "org.xfce.Xfconf":
+            if previous_owner == "" and current_owner !="":
+                self.connect_xfconf_dbus()
+            if previous_owner != "" and current_owner == "":
+                self.disconnect_xfconf_dbus()
 
     # Convenience methods.
     def xfconf_get (self, prop_base, prop, default=None):
