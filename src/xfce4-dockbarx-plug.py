@@ -193,6 +193,9 @@ class DockBarXFCEPlug(Gtk.Plug):
         self.pattern = cairo.SolidPattern(color.red, color.green, color.blue, color.alpha)
 
     def image_pattern (self, image, from_dbus=False):
+        if (image == ""):
+            self.pattern = None
+            return
         self.offset = self.xfconf_get_dbx("offset", 0)
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(image)
