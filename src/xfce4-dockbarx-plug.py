@@ -2,18 +2,23 @@
 #
 #   xfce4-dockbarx-plug
 #
-#   Copyright 2008-2013
-#      Aleksey Shaferov, Matias Sars, and Trent McPheron
+#   Copyright (C) 2008-2013 Aleksey Shaferov
+#   Copyright (C) 2008-2016 Trent McPheron
+#   Copyright (C) 2008-2020 Matias Sars
+#   Copyright (C) 2020      Ted Alff
+#   Copyright (C) 2020-2022 Xu Zhen
 #
-#   DockbarX is free software: you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
+#   This file is part of DockbarX Xfce Panel Plugin.
 #
-#   DockbarX is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+#   DockbarX Xfce Panel Plugin is free software: you can redistribute it
+#   and/or modify it under the terms of the GNU General Public License as
+#   published by the Free Software Foundation, either version 3 of the
+#   License, or (at your option) any later version.
+#
+#   DockbarX Xfce Panel Plugin is distributed in the hope that it will be
+#   useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#   General Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License
 #   along with dockbar.  If not, see <http://www.gnu.org/licenses/>.
@@ -256,9 +261,10 @@ class DockBarXFCEPlug(Gtk.Plug):
     # since the old container has been destroyed in the reload
     # and needs to be added again.
     def readd_container (self, container):
-        self.add(container)
+        if self.get_child() != container:
+            self.add(container)
         self.dockbar.set_max_size(self.get_size())
-        container.show_all()
+        container.show()
 
     # Imitates xfce4-panel's expose event.
     def on_draw (self, widget, ctx):
@@ -281,10 +287,20 @@ class DockBarXFCEPlug(Gtk.Plug):
             self.dockbar.destroy()
         self.app.quit()
 
+    # signal handlers
+    def on_sigint (self, *args):
+        self.destroy(self)
+        return 0 # G_SOURCE_REMOVE
+    def on_sigusr1 (self, *args):
+        # orientation changed
+        self.dockbar.set_orient(self.get_orient())
+        self.readd_container(self.dockbar.get_container())
+        return 1 # G_SOURCE_CONTINUE
 
 if __name__ == '__main__':
     app = Gtk.Application(application_id="org.dockbarx.xfce4panel.plugin")
     window = DockBarXFCEPlug(app)
     app.connect("activate", lambda e: app.add_window(window))
-    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, lambda: window.destroy(window))
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, window.on_sigint)
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGUSR1, window.on_sigusr1)
     app.run()

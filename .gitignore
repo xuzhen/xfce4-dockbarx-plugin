@@ -1,5 +1,5 @@
 build
-.waf*
-.lock-waf_linux_build
 *.geany
+CMakeLists.txt.user
 xfce4-dockbarx-plugin*.tar.bz2
+*.swp

@@ -4,7 +4,7 @@
 ## About xfce4-dockbarx-plugin
 xfce4-dockbarx-plugin is free software. Please see the file COPYING for details. For building and installation instructions please see the INSTALL file. For information on the authors of this program, see AUTHORS and THANKS.
 
-xfce4-dockbarx-plugin is a pair of programs--a gtk socket in Vala and a gtk plug in Python--that work together to embed DockbarX into xfce4-panel. See THANKS for details on DockbarX. Because this is not a port and just grabs the pre-existing DockbarX, you immediately benefit from any updates made to DBX, and already have all the pre-existing functionality.
+xfce4-dockbarx-plugin is a pair of programs--a gtk socket in C and a gtk plug in Python--that work together to embed DockbarX into xfce4-panel. See THANKS for details on DockbarX. Because this is not a port and just grabs the pre-existing DockbarX, you immediately benefit from any updates made to DBX, and already have all the pre-existing functionality.
 
 ## Using xfce4-dockbarx-plugin
 Add DockbarX to the panel and it will automatically start. If you don't want to customize it, no further configuration is necessary.
@@ -19,32 +19,32 @@ This plugin includes a DockbarX theme called Mouse, created by me for use with x
 ## Okay, I'm sold! Gimme the goods!
 Some distros already have it packaged in some form:
 * Arch Linux / Manjaro users can install from the [AUR](https://aur.archlinux.org/packages/xfce4-dockbarx-plugin/).
-* Ubuntu users can install from the [Dockbar PPA](https://launchpad.net/~dockbar-main/+archive/ppa).
+* Ubuntu users can install from the [Dockbar PPA](https://launchpad.net/~xuzhen666/+archive/ubuntu/dockbarx).
 * The stable source release can be found on [Xfce-Look](http://xfce-look.org/content/show.php?content=157865).
 
 If you want to (or have to) install from source, you need the following dependencies:
 
-* Vala >= 0.36.0
-* GLib >= 2.42
-* GTK+3 >= 3.22
+* GLib >= 2.38
+* GTK+3 >= 3.12
 * Xfce4-Panel >= 4.12
 * Xfconf >= 4.12
 * DockbarX >= 1.0-beta
 
 To configure, build, and install, run these commands:
 
-    ./waf configure
-    ./waf build
-    sudo ./waf install
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo make install
 
-The panel will probably not detect the plugin unless you install it in the /usr prefix, so instead do the configure step with `./waf configure --prefix=/usr` If you are using a distribution that supports checkinstall, you can replace the install step with `sudo ./waf checkinstall` to install it in your package manager.
+The panel will probably not detect the plugin unless you install it in the /usr prefix, so instead do the configure step with `cmake -DCMAKE_INSTALL_PREFIX=/usr ..`
 
 ## Awesome! Who do I need to thank for all this?
 * Aleksey Shaferov is the original Dockbar developer.
 * Matias Särs is the developer of the DockbarX fork.
-* The included Vala bindings were developed by Mike Masonnet.
-* The developers of the Vala and Python languages are to be thanked, of course.
-* The build system is waf, so all the guys working on that are to thank for keeping this out of autohell.
+* The developers of the Python languages are to be thanked, of course.
+* The build system is cmake, so all the guys working on that are to thank for keeping this out of autohell.
 * Trent McPheron is the original developer of this beautifully hacky xfce4 panel plugin that really should not work as well as it does.
 * And the github community to whom I entrust the future of this plugin.
 
