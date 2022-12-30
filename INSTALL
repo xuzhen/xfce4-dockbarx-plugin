@@ -1,9 +1,10 @@
 Installation instructions
 -------------------------
 
-xfce4-dockbarx-plugin uses the waf build system, and has the following
+xfce4-dockbarx-plugin uses the CMake build system, and has the following
 dependencies:
 
+* CMake >= 3.1
 * GLib >= 2.38
 * GTK+3 >= 3.12
 * Xfce4-Panel >= 4.12

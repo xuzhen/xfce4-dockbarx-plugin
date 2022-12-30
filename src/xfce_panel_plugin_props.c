@@ -29,6 +29,15 @@ typedef struct {
     gboolean block_ah;
 } PluginPropertiesPrivate;
 
+#define PROP_BGMODE_NAME   "bgmode"
+#define PROP_COLOR_NAME    "color"
+#define PROP_IMAGE_NAME    "image"
+#define PROP_OFFSET_NAME   "offset"
+#define PROP_MAX_SIZE_NAME "max-size"
+#define PROP_ORIENT_NAME   "orient"
+#define PROP_EXPAND_NAME   "expand"
+#define PROP_BLOCK_AH_NAME "block-ah"
+
 enum {
     PROP_0,
 
@@ -73,73 +82,71 @@ static void plugin_properties_finalize(GObject *object) {
 
 static void plugin_properties_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec) {
     PluginPropertiesPrivate *priv = plugin_properties_get_instance_private(PLUGIN_PROPERTIES(object));
-
     switch (property_id) {
-    case PROP_BGMODE:
-        priv->bgmode = g_value_get_int(value);
-        break;
-    case PROP_COLOR:
-        g_free(priv->color);
-        priv->color = g_value_dup_string(value);
-        break;
-    case PROP_IMAGE:
-        g_free(priv->image);
-        priv->image = g_value_dup_string(value);
-        break;
-    case PROP_OFFSET:
-        priv->offset = g_value_get_int(value);
-        break;
-    case PROP_MAX_SIZE:
-        priv->max_size = g_value_get_int(value);
-        break;
-    case PROP_ORIENT:
-        g_free(priv->orient);
-        priv->orient = g_value_dup_string(value);
-        break;
-    case PROP_EXPAND:
-        priv->expand = g_value_get_boolean(value);
-        break;
-    case PROP_BLOCK_AH:
-        priv->block_ah = g_value_get_boolean(value);
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-        break;
+        case PROP_BGMODE:
+            priv->bgmode = g_value_get_int(value);
+            break;
+        case PROP_COLOR:
+            g_free(priv->color);
+            priv->color = g_value_dup_string(value);
+            break;
+        case PROP_IMAGE:
+            g_free(priv->image);
+            priv->image = g_value_dup_string(value);
+            break;
+        case PROP_OFFSET:
+            priv->offset = g_value_get_int(value);
+            break;
+        case PROP_MAX_SIZE:
+            priv->max_size = g_value_get_int(value);
+            break;
+        case PROP_ORIENT:
+            g_free(priv->orient);
+            priv->orient = g_value_dup_string(value);
+            break;
+        case PROP_EXPAND:
+            priv->expand = g_value_get_boolean(value);
+            break;
+        case PROP_BLOCK_AH:
+            priv->block_ah = g_value_get_boolean(value);
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            return;
     }
+    g_object_notify_by_pspec(object, pspec);
 }
 
 static void plugin_properties_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec) {
     PluginPropertiesPrivate *priv = plugin_properties_get_instance_private(PLUGIN_PROPERTIES(object));
-
     switch (property_id) {
-
-    case PROP_BGMODE:
-        g_value_set_int(value, priv->bgmode);
-        break;
-    case PROP_COLOR:
-        g_value_set_string(value, priv->color);
-        break;
-    case PROP_IMAGE:
-        g_value_set_string(value, priv->image);
-        break;
-    case PROP_OFFSET:
-        g_value_set_int(value, priv->offset);
-        break;
-    case PROP_MAX_SIZE:
-        g_value_set_int(value, priv->max_size);
-        break;
-    case PROP_ORIENT:
-        g_value_set_string(value, priv->orient);
-        break;
-    case PROP_EXPAND:
-        g_value_set_boolean(value, priv->expand);
-        break;
-    case PROP_BLOCK_AH:
-        g_value_set_boolean(value, priv->block_ah);
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-        break;
+        case PROP_BGMODE:
+            g_value_set_int(value, priv->bgmode);
+            break;
+        case PROP_COLOR:
+            g_value_set_string(value, priv->color);
+            break;
+        case PROP_IMAGE:
+            g_value_set_string(value, priv->image);
+            break;
+        case PROP_OFFSET:
+            g_value_set_int(value, priv->offset);
+            break;
+        case PROP_MAX_SIZE:
+            g_value_set_int(value, priv->max_size);
+            break;
+        case PROP_ORIENT:
+            g_value_set_string(value, priv->orient);
+            break;
+        case PROP_EXPAND:
+            g_value_set_boolean(value, priv->expand);
+            break;
+        case PROP_BLOCK_AH:
+            g_value_set_boolean(value, priv->block_ah);
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+            break;
     }
 }
 
@@ -150,15 +157,101 @@ static void plugin_properties_class_init(PluginPropertiesClass *klass) {
     object_class->get_property = plugin_properties_get_property;
     object_class->finalize = plugin_properties_finalize;
 
-    obj_properties[PROP_BGMODE] = g_param_spec_int("bgmode", NULL, NULL, 0, 2, 2, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_COLOR] = g_param_spec_string("color", NULL, NULL, "#000", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_IMAGE] = g_param_spec_string("image", NULL, NULL, "", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_OFFSET] = g_param_spec_int("offset", NULL, NULL, -32767, 32767, 0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_MAX_SIZE] = g_param_spec_int("max_size", NULL, NULL, 0, 32767, 0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_ORIENT] = g_param_spec_string("orient", NULL, NULL, "bottom", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_EXPAND] = g_param_spec_boolean("expand", NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_BLOCK_AH] = g_param_spec_boolean("block_ah", NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_BGMODE] = g_param_spec_int(PROP_BGMODE_NAME, NULL, NULL, 0, 2, 2, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_COLOR] = g_param_spec_string(PROP_COLOR_NAME, NULL, NULL, "#000", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_IMAGE] = g_param_spec_string(PROP_IMAGE_NAME, NULL, NULL, "", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_OFFSET] = g_param_spec_int(PROP_OFFSET_NAME, NULL, NULL, -32767, 32767, 0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_MAX_SIZE] = g_param_spec_int(PROP_MAX_SIZE_NAME, NULL, NULL, 0, 32767, 0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_ORIENT] = g_param_spec_string(PROP_ORIENT_NAME, NULL, NULL, "bottom", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_EXPAND] = g_param_spec_boolean(PROP_EXPAND_NAME, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
+    obj_properties[PROP_BLOCK_AH] = g_param_spec_boolean(PROP_BLOCK_AH_NAME, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     g_object_class_install_properties(object_class, N_PROPERTIES, obj_properties);
+}
+
+gint prop_get_bgmode(GObject *object) {
+    gint v;
+    g_object_get(object, PROP_BGMODE_NAME, &v, NULL);
+    return v;
+}
+void prop_set_bgmode(GObject *object, gint bgmode) {
+    g_object_set(object, PROP_BGMODE_NAME, bgmode, NULL);
+}
+
+gchar *prop_get_color(GObject *object) {
+    gchar *v;
+    g_object_get(object, PROP_COLOR_NAME, &v, NULL);
+    return v;
+}
+void prop_set_color(GObject *object, const gchar *color) {
+    g_object_set(object, PROP_COLOR_NAME, color, NULL);
+}
+
+gchar *prop_get_image(GObject *object) {
+    gchar *v;
+    g_object_get(object, PROP_IMAGE_NAME, &v, NULL);
+    return v;
+}
+void prop_set_image(GObject *object, const gchar *image) {
+    g_object_set(object, PROP_IMAGE_NAME, image, NULL);
+}
+
+gint prop_get_offset(GObject *object) {
+    gint v;
+    g_object_get(object, PROP_OFFSET_NAME, &v, NULL);
+    return v;
+}
+void prop_set_offset(GObject *object, gint offset) {
+    g_object_set(object, PROP_OFFSET_NAME, offset, NULL);
+}
+
+gint prop_get_max_size(GObject *object) {
+    gint v;
+    g_object_get(object, PROP_MAX_SIZE_NAME, &v, NULL);
+    return v;
+}
+void prop_set_max_size(GObject *object, gint max_size) {
+    g_object_set(object, PROP_MAX_SIZE_NAME, max_size, NULL);
+}
+
+gchar *prop_get_orient(GObject *object) {
+    gchar *v;
+    g_object_get(object, PROP_ORIENT_NAME, &v, NULL);
+    return v;
+}
+void prop_set_orient(GObject *object, const gchar *orient) {
+    g_object_set(object, PROP_ORIENT_NAME, orient, NULL);
+}
+
+gboolean prop_get_expand(GObject *object) {
+    gboolean v;
+    g_object_get(object, PROP_EXPAND_NAME, &v, NULL);
+    return v;
+}
+void prop_set_expand(GObject *object, gboolean expand) {
+    g_object_set(object, PROP_EXPAND_NAME, expand, NULL);
+}
+
+gboolean prop_get_block_ah(GObject *object)  {
+    gboolean v;
+    g_object_get(object, PROP_BLOCK_AH_NAME, &v, NULL);
+    return v;
+}
+void prop_set_block_ah(GObject *object, gboolean block_ah) {
+    g_object_set(object, PROP_BLOCK_AH_NAME, block_ah, NULL);
+}
+void prop_connect_block_ah(GObject *object, GCallback cb, gpointer data) {
+    g_signal_connect(object, "notify::"PROP_BLOCK_AH_NAME, cb, data);
+}
+
+void prop_bind_xfconf(XfconfChannel *channel, GObject *object) {
+    xfconf_g_property_bind(channel, "/mode", G_TYPE_INT, object, PROP_BGMODE_NAME);
+    xfconf_g_property_bind(channel, "/color", G_TYPE_STRING, object, PROP_COLOR_NAME);
+    xfconf_g_property_bind(channel, "/image", G_TYPE_STRING, object, PROP_IMAGE_NAME);
+    xfconf_g_property_bind(channel, "/offset", G_TYPE_INT, object, PROP_OFFSET_NAME);
+    xfconf_g_property_bind(channel, "/max-size", G_TYPE_INT, object, PROP_MAX_SIZE_NAME);
+    xfconf_g_property_bind(channel, "/orient", G_TYPE_STRING, object, PROP_ORIENT_NAME);
+    xfconf_g_property_bind(channel, "/expand", G_TYPE_BOOLEAN, object, PROP_EXPAND_NAME);
+    xfconf_g_property_bind(channel, "/block-autohide", G_TYPE_BOOLEAN, object, PROP_BLOCK_AH_NAME);
 }
 

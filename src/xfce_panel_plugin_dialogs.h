@@ -16,8 +16,8 @@
  You should have received a copy of the GNU General Public License along
  with this file. If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef _XFCE_PANEL_PLUGIN_DIALOGS_H__
-#define _XFCE_PANEL_PLUGIN_DIALOGS_H__
+#ifndef _XFCE_PANEL_PLUGIN_DIALOGS_H_
+#define _XFCE_PANEL_PLUGIN_DIALOGS_H_
 
 #include "xfce_panel_plugin.h"
 

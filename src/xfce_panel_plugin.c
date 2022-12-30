@@ -33,7 +33,7 @@ static gboolean embeded = FALSE;
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin);
 static void run_plug(DockbarXPlugin *dbx_plugin);
 
-static void set_plugin_block_autohide(GObject *gobject, GParamSpec *pspec, gpointer user_data);
+static void block_panel_autohide(GObject *gobject, GParamSpec *pspec, gpointer user_data);
 static gboolean on_size_changed(XfcePanelPlugin *plugin, int size, gpointer user_data);
 static void on_orientation_changed(XfcePanelPlugin *plugin, GtkOrientation orientation, DockbarXPlugin *dbx_plugin);
 static void on_screen_position_changed(XfcePanelPlugin *plugin, XfceScreenPosition position, DockbarXPlugin *dbx_plugin);
@@ -66,16 +66,8 @@ static void dbx_plugin_construct(XfcePanelPlugin *plugin) {
     dbx_plugin->xfc = xfconf_channel_new_with_property_base("xfce4-panel", xfce_panel_plugin_get_property_base(plugin));
     dbx_plugin->props = properties;
 
-    xfconf_g_property_bind(dbx_plugin->xfc, "/mode", G_TYPE_INT, properties, "bgmode");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/color", G_TYPE_STRING, properties, "color");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/image", G_TYPE_STRING, properties, "image");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/offset", G_TYPE_INT, properties, "offset");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/max-size", G_TYPE_INT, properties, "max_size");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/orient", G_TYPE_STRING, properties, "orient");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/expand", G_TYPE_BOOLEAN, properties, "expand");
-    xfconf_g_property_bind(dbx_plugin->xfc, "/block-autohide", G_TYPE_BOOLEAN, properties, "block_ah");
-
-    g_signal_connect(properties, "notify::block_ah", G_CALLBACK(set_plugin_block_autohide), plugin);
+    prop_bind_xfconf(dbx_plugin->xfc, properties);
+    prop_connect_block_ah(properties, G_CALLBACK(block_panel_autohide), plugin);
 
     create_dialogs(dbx_plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
@@ -138,8 +130,8 @@ static void run_plug(DockbarXPlugin *dbx_plugin) {
 
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin) {
     XfceScreenPosition pos = xfce_panel_plugin_get_screen_position(dbx_plugin->plugin);
-    gchar *orient, *orig_orient;
-    g_object_get(dbx_plugin->props, "orient", &orig_orient, NULL);
+    gchar *orient;
+    gchar *orig_orient = prop_get_orient(dbx_plugin->props);
     switch (pos) {
         case XFCE_SCREEN_POSITION_S:
         case XFCE_SCREEN_POSITION_SE_H:
@@ -189,7 +181,7 @@ static gboolean determine_orient(DockbarXPlugin *dbx_plugin) {
     }
     gboolean r;
     if (g_strcmp0(orig_orient, orient) != 0) {
-        g_object_set(dbx_plugin->props, "orient", orient, NULL);
+        prop_set_orient(dbx_plugin->props, orient);
         r = TRUE;
     } else {
         r = FALSE;
@@ -207,10 +199,8 @@ static void reset_plug_orient(DockbarXPlugin *dbx_plugin) {
         }
     }
 }
-
-static void set_plugin_block_autohide(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
-    gboolean block_ah;
-    g_object_get(gobject, "block_ah", &block_ah, NULL);
+static void block_panel_autohide(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
+    gboolean block_ah = prop_get_block_ah(gobject);
     xfce_panel_plugin_block_autohide((XfcePanelPlugin*)user_data, block_ah);
 }
 
@@ -237,11 +227,10 @@ static gboolean on_plug_removed(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin 
 }
 
 static void on_free_data(XfcePanelPlugin *plugin, DockbarXPlugin *dbx_plugin) {
-    g_object_unref(plugin);
     gtk_widget_destroy(dbx_plugin->socket);
     g_slice_free(DockbarXPlugin, dbx_plugin);
     g_mutex_clear(&mutex);
-    g_object_unref(&properties);
+    g_object_unref(properties);
     xfconf_shutdown();
 }
 

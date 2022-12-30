@@ -17,6 +17,7 @@
  with this file. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "xfce_panel_plugin.h"
+#include "xfce_panel_plugin_props.h"
 #include <glib/gi18n.h>
 #include "config.h"
 
@@ -35,49 +36,23 @@ static GtkWidget *pref_max_size_spin;
 static GtkWidget *pref_expand_check;
 static GtkWidget *about_dialog;
 
-static gint get_int_prop(GObject *object, gchar *name) {
-    gint v;
-    g_object_get(object, name, &v, NULL);
-    return v;
-}
-
-static gchar *get_string_prop(GObject *object, gchar *name) {
-    gchar *v;
-    g_object_get(object, name, &v, NULL);
-    return v;
-}
-
-static gboolean get_bool_prop(GObject *object, gchar *name) {
-    gboolean v;
-    g_object_get(object, name, &v, NULL);
-    return v;
-}
-
 static void pref_bottom_radio_toggled(GtkToggleButton *togglebutton, GObject *props) {
     if (gtk_toggle_button_get_active(togglebutton)) {
         GtkOrientation orient = xfce_panel_plugin_get_orientation(plugin->plugin);
-        if (orient == GTK_ORIENTATION_HORIZONTAL) {
-            g_object_set(props, "orient", "bottom", NULL);
-        } else {
-            g_object_set(props, "orient", "left", NULL);
-        }
+        prop_set_orient(props, (orient == GTK_ORIENTATION_HORIZONTAL) ? "bottom" : "left");
     }
 }
 
 static void pref_top_radio_toggled(GtkToggleButton *togglebutton, GObject *props) {
     if (gtk_toggle_button_get_active(togglebutton)) {
         GtkOrientation orient = xfce_panel_plugin_get_orientation(plugin->plugin);
-        if (orient == GTK_ORIENTATION_HORIZONTAL) {
-            g_object_set(props, "orient", "top", NULL);
-        } else {
-            g_object_set(props, "orient", "right", NULL);
-        }
+        prop_set_orient(props, (orient == GTK_ORIENTATION_HORIZONTAL) ? "top" : "right");
     }
 }
 
 static void bgmode_toggled(GtkToggleButton *togglebutton, gpointer value) {
     if (gtk_toggle_button_get_active(togglebutton)) {
-        g_object_set(plugin->props, "bgmode", (gintptr)value, NULL);
+        prop_set_bgmode(plugin->props, (gintptr)value);
     }
 }
 
@@ -85,30 +60,28 @@ static void pref_color_button_color_set(GtkColorButton *widget, GObject *props) 
     GdkRGBA rgba;
     gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(widget), &rgba);
     gchar *color = gdk_rgba_to_string(&rgba);
-    g_object_set(props, "color", color, NULL);
+    prop_set_color(props, color);
     g_free(color);
 }
 
 static void pref_image_button_file_set(GtkFileChooserButton *widget, GObject *props) {
     gchar *file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
     if (file != NULL) {
-        g_object_set(props, "image", file, NULL);
+        prop_set_image(props, file);
         g_free(file);
     }
 }
 
 static void pref_offset_spin_value_changed(GtkSpinButton *spin_button, GObject *props) {
-    gint value = gtk_spin_button_get_value_as_int(spin_button);
-    g_object_set(props, "offset", value, NULL);
+    prop_set_offset(props, gtk_spin_button_get_value_as_int(spin_button));
 }
 
 static void pref_max_size_spin_value_changed(GtkSpinButton *spin_button, GObject *props) {
-    gint value = gtk_spin_button_get_value_as_int(spin_button);
-    g_object_set(props, "max_size", value, NULL);
+    prop_set_max_size(props, gtk_spin_button_get_value_as_int(spin_button));
 }
 
 static void pref_expand_check_toggled(GtkToggleButton *togglebutton, GObject *props) {
-    g_object_set(props, "expand", gtk_toggle_button_get_active(togglebutton), NULL);
+    prop_set_expand(props, gtk_toggle_button_get_active(togglebutton));
 }
 
 static void create_pref_dialog() {
@@ -235,6 +208,7 @@ static void create_about_dialog() {
     gtk_about_dialog_set_copyright(d, copyright);
     gtk_about_dialog_set_comments(d, "Enjoy the DockbarX in Xfce panel.");
     gtk_about_dialog_set_license(d, license);
+    gtk_about_dialog_set_wrap_license(d, TRUE);
     gtk_about_dialog_set_website(d, "https://github.com/xuzhen/xfce4-dockbarx-plugin");
     gtk_about_dialog_set_authors(d, authors);
     gtk_about_dialog_set_logo_icon_name(d, "dockbarx");
@@ -260,34 +234,34 @@ void show_pref_dialog() {
 
     XfceScreenPosition pos = xfce_panel_plugin_get_screen_position(plugin->plugin);
     if (pos == XFCE_SCREEN_POSITION_FLOATING_H || pos == XFCE_SCREEN_POSITION_FLOATING_V || pos == XFCE_SCREEN_POSITION_NONE) {
-        gtk_widget_hide(pref_orient_frame);
-    } else {
         gtk_widget_show(pref_orient_frame);
+    } else {
+        gtk_widget_hide(pref_orient_frame);
     }
 
-    gchar *orient = get_string_prop(plugin->props, "orient");
+    gchar *orient = prop_get_orient(plugin->props);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_bottom_radio), g_strcmp0(orient, "bottom") == 0 || g_strcmp0(orient, "left") == 0);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_top_radio), g_strcmp0(orient, "top") == 0 || g_strcmp0(orient, "right") == 0);
     g_free(orient);
 
-    int bgmode = get_int_prop(plugin->props, "bgmode");
+    int bgmode = prop_get_bgmode(plugin->props);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_color_radio), bgmode == 0);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_image_radio), bgmode == 1);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_blend_radio), bgmode == 2);
 
     GdkRGBA rgba;
-    gchar *color = get_string_prop(plugin->props, "color");
+    gchar *color = prop_get_color(plugin->props);
     gdk_rgba_parse(&rgba, color);
     gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(pref_color_button), &rgba);
     g_free(color);
 
-    gchar *image = get_string_prop(plugin->props, "image");
+    gchar *image = prop_get_image(plugin->props);
     gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(pref_image_button), image);
     g_free(image);
         
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(pref_offset_spin), get_int_prop(plugin->props, "offset"));
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(pref_max_size_spin), get_int_prop(plugin->props, "max_size"));
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_expand_check), get_bool_prop(plugin->props, "expand"));
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(pref_offset_spin), prop_get_offset(plugin->props));
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(pref_max_size_spin), prop_get_max_size(plugin->props));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_expand_check), prop_get_expand(plugin->props));
 
     while (TRUE) {
         gint result = gtk_dialog_run(GTK_DIALOG(pref_dialog));

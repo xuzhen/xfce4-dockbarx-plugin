@@ -16,10 +16,11 @@
  You should have received a copy of the GNU General Public License along
  with this file. If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef _XFCE_PANEL_PLUGIN_PROPS_H__
-#define _XFCE_PANEL_PLUGIN_PROPS_H__
+#ifndef _XFCE_PANEL_PLUGIN_PROPS_H_
+#define _XFCE_PANEL_PLUGIN_PROPS_H_
 
 #include <glib-object.h>
+#include <xfconf/xfconf.h>
 
 #define PLUGIN_PROPERTIES_TYPE (plugin_properties_get_type())
 #define PLUGIN_PROPERTIES(o) (G_TYPE_CHECK_INSTANCE_CAST((o), PLUGIN_PROPERTIES_TYPE, PluginProperties))
@@ -33,5 +34,25 @@ typedef struct {
 } PluginPropertiesClass;
 
 GType plugin_properties_get_type() G_GNUC_CONST;
+
+gint prop_get_bgmode(GObject *object);
+void prop_set_bgmode(GObject *object, gint bgmode);
+gchar *prop_get_color(GObject *object);
+void prop_set_color(GObject *object, const gchar *color);
+gchar *prop_get_image(GObject *object);
+void prop_set_image(GObject *object, const gchar *image);
+gint prop_get_offset(GObject *object);
+void prop_set_offset(GObject *object, gint offset);
+gint prop_get_max_size(GObject *object);
+void prop_set_max_size(GObject *object, gint max_size);
+gchar *prop_get_orient(GObject *object);
+void prop_set_orient(GObject *object, const gchar *orient);
+gboolean prop_get_expand(GObject *object);
+void prop_set_expand(GObject *object, gboolean expand);
+gboolean prop_get_block_ah(GObject *object);
+void prop_set_block_ah(GObject *object, gboolean block_ah);
+void prop_connect_block_ah(GObject *object, GCallback cb, gpointer data);
+
+void prop_bind_xfconf(XfconfChannel *channel, GObject *object);
 
 #endif

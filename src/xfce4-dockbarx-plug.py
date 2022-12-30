@@ -39,6 +39,7 @@ from gi.repository import GLib
 import cairo
 import dbus
 import signal
+import urllib.parse
 
 from optparse import OptionParser
 import os
@@ -222,9 +223,14 @@ class DockBarXFCEPlug(Gtk.Plug):
 
     def pattern_from_dbus (self):
         bgstyle = self.xfconf_get_panel("background-style", 0)
-        image = self.xfconf_get_panel("background-image", "")
-        if bgstyle == 2 and os.path.isfile(image):
-            self.image_pattern(image, from_dbus=True)
+        if bgstyle == 2:
+            image = self.xfconf_get_panel("background-image", "")
+            if image.startswith("file://"):
+                image = urllib.parse.unquote(urllib.parse.urlparse(image).path)
+            if os.path.isfile(image):
+                self.image_pattern(image, from_dbus=True)
+            else:
+                self.pattern = None
         elif bgstyle == 1:
             col = self.xfconf_get_panel("background-rgba", None)
             if col is None:
@@ -269,7 +275,7 @@ class DockBarXFCEPlug(Gtk.Plug):
     # Imitates xfce4-panel's expose event.
     def on_draw (self, widget, ctx):
         a = widget.get_allocation()
-        if self. pattern is None:
+        if self.pattern is None:
             context = widget.get_style_context()
             Gtk.render_background(context, ctx, a.x, a.y, a.width, a.height)
             return
