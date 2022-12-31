@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(xfce4-dockbarx-plugin)
+project(xfce4-dockbarx-plugin C)
 
 include(GNUInstallDirs)
 
