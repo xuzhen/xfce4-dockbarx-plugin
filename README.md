@@ -31,6 +31,10 @@ If you want to (or have to) install from source, you need the following dependen
 * Xfconf >= 4.12
 * DockbarX >= 1.0-beta2
 
+For Debian/Ubuntu users, the building dependencies could be installed by using:
+
+    sudo apt install gcc make cmake libglib2.0-dev libgtk-3-dev libxfce4panel-2.0-dev libxfconf-0-dev
+
 To configure, build, and install, run these commands:
 
     mkdir build
