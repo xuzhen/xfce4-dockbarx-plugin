@@ -9,7 +9,7 @@ dependencies:
 * GTK+3 >= 3.12
 * Xfce4-Panel >= 4.12
 * Xfconf >= 4.12
-* DockbarX >= 1.0-beta
+* DockbarX >= 1.0-beta2
 
 To configure, build, and install xfce4-dockbarx-plugin, run these commands:
 
