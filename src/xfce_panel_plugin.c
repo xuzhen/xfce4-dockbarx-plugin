@@ -228,6 +228,7 @@ static gboolean on_plug_removed(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin 
 
 static void on_free_data(XfcePanelPlugin *plugin, DockbarXPlugin *dbx_plugin) {
     gtk_widget_destroy(dbx_plugin->socket);
+    g_object_unref(dbx_plugin->xfc);
     g_slice_free(DockbarXPlugin, dbx_plugin);
     g_mutex_clear(&mutex);
     g_object_unref(properties);
