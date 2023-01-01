@@ -1,6 +1,9 @@
 Change Log
 ----------
 
+0.7.1:
+- Fixed xfconf dbus reconnecting bug
+
 0.7:
 - Rewrite all vala codes
 - Fixed various bugs
