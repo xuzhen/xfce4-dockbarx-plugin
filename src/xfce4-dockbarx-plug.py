@@ -120,6 +120,7 @@ class DockBarXFCEPlug(Gtk.Plug):
     def disconnect_xfconf_dbus(self):
         self.bus.remove_signal_receiver(self.xfconf_changed, "PropertyChanged",
          "org.xfce.Xfconf", "org.xfce.Xfconf", "/org/xfce/Xfconf")
+        self.xfconf = None
 
     def xfconf_dbus_changed(self, name, previous_owner, current_owner):
         if str(name) == "org.xfce.Xfconf":
@@ -130,6 +131,8 @@ class DockBarXFCEPlug(Gtk.Plug):
 
     # Convenience methods.
     def xfconf_get (self, prop_base, prop, default=None):
+        if self.xfconf is None:
+            self.connect_xfconf_dbus()
         if self.xfconf.PropertyExists("xfce4-panel", prop_base + prop):
             retval = self.xfconf.GetProperty("xfce4-panel", prop_base + prop)
             return retval
@@ -164,6 +167,8 @@ class DockBarXFCEPlug(Gtk.Plug):
     # The only function that sets anything in xfconf. It's a lazy way to
     # communicate with the vala socket, but it does work!
     def set_block_autohide (self):
+        if self.xfconf is None:
+            self.connect_xfconf_dbus()
         self.xfconf.SetProperty("xfce4-panel", self.dbx_prop +
          "block-autohide", self.dockbar.globals.get_shown_popup() != None or
           self.dockbar.globals.gtkmenu != None)
