@@ -34,6 +34,7 @@ static gboolean determine_orient(DockbarXPlugin *dbx_plugin);
 static void run_plug(DockbarXPlugin *dbx_plugin);
 
 static void block_panel_autohide(GObject *gobject, GParamSpec *pspec, gpointer user_data);
+static void set_plugin_expand(GObject *gobject, GParamSpec *pspec, gpointer user_data);
 static gboolean on_size_changed(XfcePanelPlugin *plugin, int size, gpointer user_data);
 static void on_orientation_changed(XfcePanelPlugin *plugin, GtkOrientation orientation, DockbarXPlugin *dbx_plugin);
 static void on_screen_position_changed(XfcePanelPlugin *plugin, XfceScreenPosition position, DockbarXPlugin *dbx_plugin);
@@ -67,11 +68,13 @@ static void dbx_plugin_construct(XfcePanelPlugin *plugin) {
     dbx_plugin->props = properties;
 
     prop_bind_xfconf(dbx_plugin->xfc, properties);
+    prop_connect_expand(properties, G_CALLBACK(set_plugin_expand), plugin);
     prop_connect_block_ah(properties, G_CALLBACK(block_panel_autohide), plugin);
 
     create_dialogs(dbx_plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     xfce_panel_plugin_menu_show_about(plugin);
+    xfce_panel_plugin_set_expand(plugin, prop_get_expand(properties));
 
     g_signal_connect(G_OBJECT(plugin), "configure-plugin", G_CALLBACK(on_configure_plugin), NULL);
     g_signal_connect(G_OBJECT(plugin), "about", G_CALLBACK(on_about), NULL);
@@ -202,6 +205,11 @@ static void reset_plug_orient(DockbarXPlugin *dbx_plugin) {
 static void block_panel_autohide(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
     gboolean block_ah = prop_get_block_ah(gobject);
     xfce_panel_plugin_block_autohide((XfcePanelPlugin*)user_data, block_ah);
+}
+
+static void set_plugin_expand(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
+    gboolean expand = prop_get_expand(gobject);
+    xfce_panel_plugin_set_expand((XfcePanelPlugin*)user_data, expand);
 }
 
 static gboolean on_size_changed(G_GNUC_UNUSED XfcePanelPlugin *plugin, G_GNUC_UNUSED int size, G_GNUC_UNUSED gpointer user_data) {

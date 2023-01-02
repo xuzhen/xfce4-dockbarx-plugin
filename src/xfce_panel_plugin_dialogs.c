@@ -81,7 +81,9 @@ static void pref_max_size_spin_value_changed(GtkSpinButton *spin_button, GObject
 }
 
 static void pref_expand_check_toggled(GtkToggleButton *togglebutton, GObject *props) {
-    prop_set_expand(props, gtk_toggle_button_get_active(togglebutton));
+    gboolean active = gtk_toggle_button_get_active(togglebutton);
+    prop_set_expand(props, active);
+    gtk_widget_set_sensitive(pref_max_size_spin, !active);
 }
 
 static void create_pref_dialog() {

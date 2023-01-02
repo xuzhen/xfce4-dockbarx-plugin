@@ -49,6 +49,7 @@ gchar *prop_get_orient(GObject *object);
 void prop_set_orient(GObject *object, const gchar *orient);
 gboolean prop_get_expand(GObject *object);
 void prop_set_expand(GObject *object, gboolean expand);
+void prop_connect_expand(GObject *object, GCallback cb, gpointer data);
 gboolean prop_get_block_ah(GObject *object);
 void prop_set_block_ah(GObject *object, gboolean block_ah);
 void prop_connect_block_ah(GObject *object, GCallback cb, gpointer data);

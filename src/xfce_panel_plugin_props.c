@@ -231,6 +231,9 @@ gboolean prop_get_expand(GObject *object) {
 void prop_set_expand(GObject *object, gboolean expand) {
     g_object_set(object, PROP_EXPAND_NAME, expand, NULL);
 }
+void prop_connect_expand(GObject *object, GCallback cb, gpointer data) {
+    g_signal_connect(object, "notify::"PROP_EXPAND_NAME, cb, data);
+}
 
 gboolean prop_get_block_ah(GObject *object)  {
     gboolean v;

@@ -150,8 +150,10 @@ class DockBarXFCEPlug(Gtk.Plug):
         elif self.dbx_prop in prop:
             if "orient" in prop:  self.dockbar.set_orient(self.get_orient())
             elif "mode" in prop:  self.config_bg()
-            elif "max-size" in prop or "expand" in prop:
+            elif "max-size" in prop:
                 self.dockbar.set_max_size(self.get_size())
+            elif "expand" in prop:
+                self.dockbar.set_max_size(self.get_size(val))
             elif "block-autohide" in prop:
                 pass  # This is one way comm from the plug to the socket.
             elif self.mode == 0 and ("color" in prop or "alpha" in prop):
@@ -262,10 +264,13 @@ class DockBarXFCEPlug(Gtk.Plug):
 
         return self.orient
 
-    def get_size (self):
+    def get_size (self, expand = None):
+        if expand is None:
+            expand = self.xfconf_get_dbx("expand", False)
+        if expand:
+            return 32767
         max_size = self.xfconf_get_dbx("max-size", 0)
         if max_size < 1: max_size = 32767
-        self.expand = self.xfconf_get_dbx("expand", False)
         return max_size
 
     # Dockbar calls back with this function when it is reloaded
