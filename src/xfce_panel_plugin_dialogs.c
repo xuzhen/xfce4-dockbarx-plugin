@@ -21,6 +21,12 @@
 #include <glib/gi18n.h>
 #include "config.h"
 
+enum {
+    BGMODE_SOLID_COLOR  = 0,
+    BGMODE_IMAGE        = 1,
+    BGMODE_BLEND        = 2,
+};
+
 static DockbarXPlugin *plugin;
 static GtkWidget *pref_dialog;
 static GtkWidget *pref_bottom_radio;
@@ -51,8 +57,16 @@ static void pref_top_radio_toggled(GtkToggleButton *togglebutton, GObject *props
 }
 
 static void bgmode_toggled(GtkToggleButton *togglebutton, gpointer value) {
-    if (gtk_toggle_button_get_active(togglebutton)) {
-        prop_set_bgmode(plugin->props, (gintptr)value);
+    int mode = (gintptr)value;
+    gboolean active = gtk_toggle_button_get_active(togglebutton);
+    if (active) {
+        prop_set_bgmode(plugin->props, mode);
+    }
+    if (mode == BGMODE_SOLID_COLOR) {
+        gtk_widget_set_sensitive(pref_color_button, active);
+    } else if (mode == BGMODE_IMAGE) {
+        gtk_widget_set_sensitive(pref_image_button, active);
+        gtk_widget_set_sensitive(pref_offset_spin, active);
     }
 }
 
@@ -169,9 +183,9 @@ static void create_pref_dialog() {
     g_signal_connect(pref_bottom_radio, "toggled", G_CALLBACK(pref_bottom_radio_toggled), plugin->props);
     g_signal_connect(pref_top_radio, "toggled", G_CALLBACK(pref_top_radio_toggled), plugin->props);
 
-    g_signal_connect(pref_color_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)0);
-    g_signal_connect(pref_image_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)1);
-    g_signal_connect(pref_blend_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)2);
+    g_signal_connect(pref_color_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)BGMODE_SOLID_COLOR);
+    g_signal_connect(pref_image_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)BGMODE_IMAGE);
+    g_signal_connect(pref_blend_radio, "toggled", G_CALLBACK(bgmode_toggled), (gpointer)BGMODE_BLEND);
 
     g_signal_connect(pref_color_button, "color-set", G_CALLBACK(pref_color_button_color_set), plugin->props);
 
@@ -247,9 +261,12 @@ void show_pref_dialog() {
     g_free(orient);
 
     int bgmode = prop_get_bgmode(plugin->props);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_color_radio), bgmode == 0);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_image_radio), bgmode == 1);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_blend_radio), bgmode == 2);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_color_radio), bgmode == BGMODE_SOLID_COLOR);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_image_radio), bgmode == BGMODE_IMAGE);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pref_blend_radio), bgmode == BGMODE_BLEND);
+    gtk_widget_set_sensitive(pref_color_button, bgmode == BGMODE_SOLID_COLOR);
+    gtk_widget_set_sensitive(pref_image_button, bgmode == BGMODE_IMAGE);
+    gtk_widget_set_sensitive(pref_offset_spin, bgmode == BGMODE_IMAGE);
 
     GdkRGBA rgba;
     gchar *color = prop_get_color(plugin->props);
