@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2022 Xu Zhen
+ Copyright (C) 2022-2023 Xu Zhen
  
  This file is part of DockbarX Xfce Panel Plugin.
  

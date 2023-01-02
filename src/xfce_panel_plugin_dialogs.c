@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2022 Xu Zhen
+ Copyright (C) 2022-2023 Xu Zhen
  
  This file is part of DockbarX Xfce Panel Plugin.
  
@@ -206,7 +206,7 @@ static void create_about_dialog() {
                              "Copyright (C) 2008-2016 Trent McPheron\n"
                              "Copyright (C) 2008-2020 Matias Sars\n"
                              "Copyright (C) 2020 Ted Alff\n"
-                             "Copyright (C) 2020-2022 Xu Zhen";
+                             "Copyright (C) 2020-2023 Xu Zhen";
     const gchar *license = "This program is free software: you can redistribute it and/or "
                            "modify it under the terms of the GNU General Public License as published by "
                            "the Free Software Foundation, either version 3 of the License, or (at your "
