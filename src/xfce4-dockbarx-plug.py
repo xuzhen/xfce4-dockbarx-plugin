@@ -169,7 +169,7 @@ class DockBarXFCEPlug(Gtk.Plug):
         self.queue_draw()
 
     # The only function that sets anything in xfconf. It's a lazy way to
-    # communicate with the vala socket, but it does work!
+    # communicate with the GtkSocket, but it does work!
     def set_block_autohide (self):
         if self.xfconf is None:
             self.connect_xfconf_dbus()
