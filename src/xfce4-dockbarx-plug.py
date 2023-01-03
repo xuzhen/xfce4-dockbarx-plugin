@@ -156,12 +156,14 @@ class DockBarXFCEPlug(Gtk.Plug):
                 self.dockbar.set_max_size(self.get_size(val))
             elif "block-autohide" in prop:
                 pass  # This is one way comm from the plug to the socket.
-            elif self.mode == 0 and ("color" in prop or "alpha" in prop):
-                color = Gdk.RGBA()
-                color.parse(self.xfconf_get_dbx("color", "#000"))
-                self.color_pattern(color)
-            elif self.mode == 1 and ("image" in prop or "offset" in prop):
-                self.image_pattern(self.xfconf_get_dbx("image", ""))
+            elif "color" in prop:
+                if self.mode == 0:
+                    color = Gdk.RGBA()
+                    color.parse(self.xfconf_get_dbx("color", "#000"))
+                    self.color_pattern(color)
+            elif "image" in prop or "offset" in prop:
+                if self.mode == 1:
+                    self.image_pattern(self.xfconf_get_dbx("image", ""))
             else:
                 self.pattern_from_dbus()
         self.queue_draw()
