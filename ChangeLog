@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+0.7.2:
+- Fixed expand mode
+- Improve settings dialog
+
 0.7.1:
 - Fixed xfconf dbus reconnecting bug
 
