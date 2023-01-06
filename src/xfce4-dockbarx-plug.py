@@ -36,20 +36,21 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 from gi.repository import GLib
+from gi.repository import Gio
 import cairo
 import dbus
 import signal
 import urllib.parse
 
-from optparse import OptionParser
 import os
 
+DBUS_NAME="org.dockbar.plugins.xfce4panel"
 
 # A very minimal plug application that loads DockbarX
 # so that the embed plugin can, well, embed it.
 class DockBarXFCEPlug(Gtk.Plug):
 
-    def __init__ (self, app):
+    def __init__ (self, app, socket, plugin_id):
         import dockbarx.dockbar as db
         self.app = app
         self.bus = None
@@ -58,19 +59,8 @@ class DockBarXFCEPlug(Gtk.Plug):
         self.panel_prop = None
         self.mode = None
 
-        parser = OptionParser()
-        parser.add_option("-s", "--socket", default = 0, help = "Socket ID")
-        parser.add_option("-i", "--plugin_id", default = -1, help = "Plugin ID")
-        (options, args) = parser.parse_args()
-
-        # Sanity checks.
-        if options.socket == 0:
-            sys.exit("This program needs to be run by the XFCE DBX plugin.")
-        if options.plugin_id == -1:
-            sys.exit("We need to know the plugin id of the DBX socket.")
-
         Gtk.Plug.__init__(self)
-        self.construct(int(options.socket))
+        self.construct(socket)
         self.connect("destroy", self.destroy)
         self.get_settings().connect("notify::gtk-theme-name",self.theme_changed)
         self.set_app_paintable(True)
@@ -87,10 +77,10 @@ class DockBarXFCEPlug(Gtk.Plug):
 
         self.bus = dbus.SessionBus()
         self.connect_xfconf_dbus()
-        self.dbx_prop = "/plugins/plugin-" + options.plugin_id + "/"
+        self.dbx_prop = "/plugins/plugin-%d/" % plugin_id
         self.panel_prop = [k for (k, v) in
          self.xfconf.GetAllProperties("xfce4-panel", "/panels").items()
-         if "plugin-ids" in k and int(options.plugin_id) in v][0][:-10]
+         if "plugin-ids" in k and plugin_id in v][0][:-10]
 
         fdo = self.bus.get_object("org.freedesktop.DBus",
                                   "/org/freedesktop/DBus")
@@ -154,8 +144,6 @@ class DockBarXFCEPlug(Gtk.Plug):
                 self.dockbar.set_max_size(self.get_size())
             elif "expand" in prop:
                 self.dockbar.set_max_size(self.get_size(val))
-            elif "block-autohide" in prop:
-                pass  # This is one way comm from the plug to the socket.
             elif "color" in prop:
                 if self.mode == 0:
                     color = Gdk.RGBA()
@@ -168,14 +156,10 @@ class DockBarXFCEPlug(Gtk.Plug):
                 self.pattern_from_dbus()
         self.queue_draw()
 
-    # The only function that sets anything in xfconf. It's a lazy way to
-    # communicate with the GtkSocket, but it does work!
     def set_block_autohide (self):
-        if self.xfconf is None:
-            self.connect_xfconf_dbus()
-        self.xfconf.SetProperty("xfce4-panel", self.dbx_prop +
-         "block-autohide", self.dockbar.globals.get_shown_popup() != None or
-          self.dockbar.globals.gtkmenu != None)
+        blocked = self.dockbar.globals.get_shown_popup() != None or \
+                  self.dockbar.globals.gtkmenu != None
+        self.app.notify_autohide(blocked)
 
     # Terrible monkey patching... but this allows inhibiting autohide!
     def block_autohide_patch (self):
@@ -309,16 +293,85 @@ class DockBarXFCEPlug(Gtk.Plug):
     def on_sigint (self, *args):
         self.destroy(self)
         return 0 # G_SOURCE_REMOVE
-    def on_sigusr1 (self, *args):
-        # orientation changed
-        self.dockbar.set_orient(self.get_orient())
-        self.readd_container(self.dockbar.get_container())
-        return 1 # G_SOURCE_CONTINUE
+
+class XfcePlugApp(Gtk.Application):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, application_id=DBUS_NAME, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
+        self.window = None
+        self.socket = None
+        self.plugin_id = None
+        self.add_main_option("socket", ord("s"), GLib.OptionFlags.IN_MAIN, GLib.OptionArg.INT, "Socket ID", None)
+        self.add_main_option("plugin_id", ord("i"), GLib.OptionFlags.IN_MAIN, GLib.OptionArg.INT, "Plugin ID", None)
+
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+        self.register_dbus()
+        
+    def do_activate(self):
+        if not self.window:
+            self.window = DockBarXFCEPlug(self, self.socket, self.plugin_id)
+            self.add_window(self.window)
+            GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.window.on_sigint)
+        self.window.present()
+
+    def do_command_line(self, command_line):
+        options = command_line.get_options_dict()
+        options = options.end().unpack()
+        if "socket" in options:
+            self.socket = int(options["socket"])
+        else:
+            logger.error("This program needs to be run by the XFCE DBX plugin.")
+            return 1
+        if "plugin_id" in options:
+            self.plugin_id = int(options["plugin_id"])
+        else:
+            logger.error("We need to know the plugin id of the DBX socket.")
+            return 1
+        self.activate()
+        return 0
+
+    def notify_autohide(self, blocked):
+        dbus = self.get_dbus_connection()
+        dbus_path = self.get_dbus_object_path()
+        args = GLib.Variant.new_tuple(GLib.Variant.new_boolean(blocked))
+        dbus.emit_signal(None, dbus_path, DBUS_NAME, "AutoHide", args)
+
+    def register_dbus(self):
+        dbus_xml = \
+            "<node>" \
+              "<interface name='%s'>" % DBUS_NAME + \
+                "<method name='SetOrient'>" \
+                  "<arg type='s' name='pos' direction='in'/>" \
+                "</method>" \
+                "<signal name='AutoHide'>" \
+                  "<arg type='b' name='block'/>" \
+                "</signal>" \
+              "</interface>" \
+            "</node>"
+        info = Gio.DBusNodeInfo.new_for_xml(dbus_xml)
+        iface = info.lookup_interface(DBUS_NAME)
+        dbus = self.get_dbus_connection()
+        dbus_path = self.get_dbus_object_path()
+        dbus.register_object(dbus_path, iface, self.dbus_method_call, None, None);
+
+    def dbus_method_call(self, connection, sender, object_path, interface_name, method_name, parameters, invocation):
+        ret = None
+        if self.window is None:
+            err = Gio.DBusError.FAILED
+            err_message = "Not ready yet"
+        if method_name == "SetOrient":
+            self.window.dockbar.set_orient(self.window.get_orient())
+            self.window.readd_container(self.window.dockbar.get_container())
+            ret = GLib.Variant.new_tuple()
+        else:
+            err = Gio.DBusError.UNKNOWN_METHOD
+            err_message = "No such method: %s" % method_name
+
+        if ret is not None:
+            invocation.return_value(ret)
+        else:
+            invocation.return_error_literal(err.quark(), err, err_message)
+
 
 if __name__ == '__main__':
-    app = Gtk.Application(application_id="org.dockbarx.xfce4panel.plugin")
-    window = DockBarXFCEPlug(app)
-    app.connect("activate", lambda e: app.add_window(window))
-    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, window.on_sigint)
-    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGUSR1, window.on_sigusr1)
-    app.run()
+    XfcePlugApp().run(sys.argv)

@@ -26,7 +26,6 @@ typedef struct {
     gint max_size;
     gchar *orient;
     gboolean expand;
-    gboolean block_ah;
 } PluginPropertiesPrivate;
 
 #define PROP_BGMODE_NAME   "bgmode"
@@ -36,7 +35,6 @@ typedef struct {
 #define PROP_MAX_SIZE_NAME "max-size"
 #define PROP_ORIENT_NAME   "orient"
 #define PROP_EXPAND_NAME   "expand"
-#define PROP_BLOCK_AH_NAME "block-ah"
 
 enum {
     PROP_0,
@@ -48,7 +46,6 @@ enum {
     PROP_MAX_SIZE,
     PROP_ORIENT,
     PROP_EXPAND,
-    PROP_BLOCK_AH,
 
     N_PROPERTIES
 };
@@ -68,7 +65,6 @@ static void plugin_properties_init(PluginProperties *object) {
     priv->max_size = 0;
     priv->orient = g_strdup("");
     priv->expand = FALSE;
-    priv->block_ah = FALSE;
 }
 
 static void plugin_properties_finalize(GObject *object) {
@@ -107,9 +103,6 @@ static void plugin_properties_set_property(GObject *object, guint property_id, c
         case PROP_EXPAND:
             priv->expand = g_value_get_boolean(value);
             break;
-        case PROP_BLOCK_AH:
-            priv->block_ah = g_value_get_boolean(value);
-            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             return;
@@ -141,9 +134,6 @@ static void plugin_properties_get_property (GObject *object, guint property_id, 
         case PROP_EXPAND:
             g_value_set_boolean(value, priv->expand);
             break;
-        case PROP_BLOCK_AH:
-            g_value_set_boolean(value, priv->block_ah);
-            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
             break;
@@ -164,7 +154,6 @@ static void plugin_properties_class_init(PluginPropertiesClass *klass) {
     obj_properties[PROP_MAX_SIZE] = g_param_spec_int(PROP_MAX_SIZE_NAME, NULL, NULL, 0, 32767, 0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
     obj_properties[PROP_ORIENT] = g_param_spec_string(PROP_ORIENT_NAME, NULL, NULL, "bottom", G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
     obj_properties[PROP_EXPAND] = g_param_spec_boolean(PROP_EXPAND_NAME, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
-    obj_properties[PROP_BLOCK_AH] = g_param_spec_boolean(PROP_BLOCK_AH_NAME, NULL, NULL, FALSE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT);
 
     g_object_class_install_properties(object_class, N_PROPERTIES, obj_properties);
 }
@@ -235,18 +224,6 @@ void prop_connect_expand(GObject *object, GCallback cb, gpointer data) {
     g_signal_connect(object, "notify::"PROP_EXPAND_NAME, cb, data);
 }
 
-gboolean prop_get_block_ah(GObject *object)  {
-    gboolean v;
-    g_object_get(object, PROP_BLOCK_AH_NAME, &v, NULL);
-    return v;
-}
-void prop_set_block_ah(GObject *object, gboolean block_ah) {
-    g_object_set(object, PROP_BLOCK_AH_NAME, block_ah, NULL);
-}
-void prop_connect_block_ah(GObject *object, GCallback cb, gpointer data) {
-    g_signal_connect(object, "notify::"PROP_BLOCK_AH_NAME, cb, data);
-}
-
 void prop_bind_xfconf(XfconfChannel *channel, GObject *object) {
     xfconf_g_property_bind(channel, "/mode", G_TYPE_INT, object, PROP_BGMODE_NAME);
     xfconf_g_property_bind(channel, "/color", G_TYPE_STRING, object, PROP_COLOR_NAME);
@@ -255,6 +232,5 @@ void prop_bind_xfconf(XfconfChannel *channel, GObject *object) {
     xfconf_g_property_bind(channel, "/max-size", G_TYPE_INT, object, PROP_MAX_SIZE_NAME);
     xfconf_g_property_bind(channel, "/orient", G_TYPE_STRING, object, PROP_ORIENT_NAME);
     xfconf_g_property_bind(channel, "/expand", G_TYPE_BOOLEAN, object, PROP_EXPAND_NAME);
-    xfconf_g_property_bind(channel, "/block-autohide", G_TYPE_BOOLEAN, object, PROP_BLOCK_AH_NAME);
 }
 

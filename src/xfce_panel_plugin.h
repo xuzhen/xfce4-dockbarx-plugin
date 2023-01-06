@@ -24,6 +24,7 @@
 #include <libxfce4panel/libxfce4panel.h>
 #include <xfconf/xfconf.h>
 #include <glib-object.h>
+#include <gio/gio.h>
 
 typedef struct {
     XfcePanelPlugin *plugin;
@@ -31,6 +32,9 @@ typedef struct {
     GtkWidget *socket;
     ulong socket_id;
     GObject *props;
+    GDBusConnection *conn;
+    guint sub_id;
+    guint watch_id;
 } DockbarXPlugin;
 
 #endif

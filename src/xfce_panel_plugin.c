@@ -33,7 +33,10 @@ static gboolean embeded = FALSE;
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin);
 static void run_plug(DockbarXPlugin *dbx_plugin);
 
-static void block_panel_autohide(GObject *gobject, GParamSpec *pspec, gpointer user_data);
+static void on_dbus_name_appared(GDBusConnection *conn, const gchar *name, const gchar *name_owner, gpointer user_data);
+static void on_dbus_name_vanished(GDBusConnection *conn, const gchar *name, gpointer user_data);
+static void on_dbus_plugin_signal(GDBusConnection *conn, const gchar *sender_name, const gchar *object_path, const gchar *interface_name, const gchar *signal_name, GVariant *parameters, gpointer user_data);
+
 static void set_plugin_expand(GObject *gobject, GParamSpec *pspec, gpointer user_data);
 static gboolean on_size_changed(XfcePanelPlugin *plugin, int size, gpointer user_data);
 static void on_orientation_changed(XfcePanelPlugin *plugin, GtkOrientation orientation, DockbarXPlugin *dbx_plugin);
@@ -66,10 +69,12 @@ static void dbx_plugin_construct(XfcePanelPlugin *plugin) {
     dbx_plugin->plugin = plugin;
     dbx_plugin->xfc = xfconf_channel_new_with_property_base("xfce4-panel", xfce_panel_plugin_get_property_base(plugin));
     dbx_plugin->props = properties;
+    dbx_plugin->conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    dbx_plugin->watch_id = g_bus_watch_name_on_connection(dbx_plugin->conn, "org.dockbar.plugins.xfce4panel", G_BUS_NAME_WATCHER_FLAGS_NONE, on_dbus_name_appared, on_dbus_name_vanished, dbx_plugin, NULL);
+    dbx_plugin->sub_id = 0;
 
     prop_bind_xfconf(dbx_plugin->xfc, properties);
     prop_connect_expand(properties, G_CALLBACK(set_plugin_expand), plugin);
-    prop_connect_block_ah(properties, G_CALLBACK(block_panel_autohide), plugin);
 
     create_dialogs(dbx_plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
@@ -202,10 +207,6 @@ static void reset_plug_orient(DockbarXPlugin *dbx_plugin) {
         }
     }
 }
-static void block_panel_autohide(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
-    gboolean block_ah = prop_get_block_ah(gobject);
-    xfce_panel_plugin_block_autohide((XfcePanelPlugin*)user_data, block_ah);
-}
 
 static void set_plugin_expand(GObject *gobject, G_GNUC_UNUSED GParamSpec *pspec, gpointer user_data) {
     gboolean expand = prop_get_expand(gobject);
@@ -237,6 +238,9 @@ static gboolean on_plug_removed(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin 
 static void on_free_data(XfcePanelPlugin *plugin, DockbarXPlugin *dbx_plugin) {
     gtk_widget_destroy(dbx_plugin->socket);
     g_object_unref(dbx_plugin->xfc);
+    g_dbus_connection_signal_unsubscribe(dbx_plugin->conn, dbx_plugin->sub_id);
+    g_bus_unwatch_name(dbx_plugin->watch_id);
+    g_object_unref(dbx_plugin->conn);
     g_slice_free(DockbarXPlugin, dbx_plugin);
     g_mutex_clear(&mutex);
     g_object_unref(properties);
@@ -251,3 +255,21 @@ static void on_about(G_GNUC_UNUSED XfcePanelPlugin *plugin, G_GNUC_UNUSED gpoint
     show_about_dialog();
 }
 
+static void on_dbus_name_appared(GDBusConnection *conn, const gchar *name, const gchar *name_owner, gpointer user_data) {
+    DockbarXPlugin *dbx_plugin = (DockbarXPlugin*)user_data;
+    dbx_plugin->sub_id = g_dbus_connection_signal_subscribe(conn, name_owner, name, "AutoHide", "/org/dockbar/plugins/xfce4panel", NULL, G_DBUS_SIGNAL_FLAGS_NONE, on_dbus_plugin_signal, dbx_plugin->plugin, NULL);
+
+}
+
+static void on_dbus_name_vanished(GDBusConnection *conn, const gchar *name, gpointer user_data) {
+    DockbarXPlugin *dbx_plugin = (DockbarXPlugin*)user_data;
+    if (dbx_plugin->sub_id != 0) {
+        g_dbus_connection_signal_unsubscribe(conn, dbx_plugin->sub_id);
+        dbx_plugin->sub_id = 0;
+    }
+}
+
+static void on_dbus_plugin_signal(GDBusConnection *conn, G_GNUC_UNUSED const gchar *sender_name, G_GNUC_UNUSED const gchar *object_path, G_GNUC_UNUSED const gchar *interface_name, G_GNUC_UNUSED const gchar *signal_name, GVariant *parameters, gpointer user_data) {
+    gboolean block = g_variant_get_boolean(g_variant_get_child_value(parameters, 0));
+    xfce_panel_plugin_block_autohide((XfcePanelPlugin*)user_data, block);
+}
