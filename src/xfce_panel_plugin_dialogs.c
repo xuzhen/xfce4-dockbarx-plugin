@@ -198,6 +198,7 @@ static void create_pref_dialog() {
 
     gtk_widget_show_all(content);
     gtk_window_set_resizable(GTK_WINDOW(pref_dialog), FALSE);
+    gtk_window_set_icon_name(GTK_WINDOW(pref_dialog), "dockbarx");
 }
 
 static void create_about_dialog() {
@@ -228,6 +229,7 @@ static void create_about_dialog() {
     gtk_about_dialog_set_website(d, "https://github.com/xuzhen/xfce4-dockbarx-plugin");
     gtk_about_dialog_set_authors(d, authors);
     gtk_about_dialog_set_logo_icon_name(d, "dockbarx");
+    gtk_window_set_icon_name(GTK_WINDOW(about_dialog), "dockbarx");
     xfce_panel_plugin_take_window(plugin->plugin, GTK_WINDOW(about_dialog));
 }
 
