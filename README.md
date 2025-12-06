@@ -24,7 +24,7 @@ Some distros already have it packaged in some form:
 
 If you want to (or have to) install from source, you need the following dependencies:
 
-* CMake >= 3.1
+* CMake >= 3.10
 * GLib >= 2.38
 * GTK+3 >= 3.12
 * Xfce4-Panel >= 4.12
