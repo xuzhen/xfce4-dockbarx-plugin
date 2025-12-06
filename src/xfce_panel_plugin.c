@@ -28,7 +28,7 @@
 static GObject *properties = NULL;
 static GMutex mutex;
 static GPid pid = 0;
-static gboolean embeded = FALSE;
+static gboolean embedded = FALSE;
 
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin);
 static void run_plug(DockbarXPlugin *dbx_plugin);
@@ -200,7 +200,7 @@ static gboolean determine_orient(DockbarXPlugin *dbx_plugin) {
 
 static void reset_plug_orient(DockbarXPlugin *dbx_plugin) {
     if (determine_orient(dbx_plugin)) {
-        if (pid != 0 && embeded) {
+        if (pid != 0 && embedded) {
             kill(pid, SIGUSR1);
         } else {
             run_plug(dbx_plugin);
@@ -226,11 +226,11 @@ static void on_screen_position_changed(G_GNUC_UNUSED XfcePanelPlugin *plugin, G_
 }
 
 static void on_plug_added(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin *dbx_plugin) {
-    embeded = TRUE;
+    embedded = TRUE;
 }
 
 static gboolean on_plug_removed(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin *dbx_plugin) {
-    embeded = FALSE;
+    embedded = FALSE;
     run_plug(dbx_plugin);
     return TRUE;
 }
