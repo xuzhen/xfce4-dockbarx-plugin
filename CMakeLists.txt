@@ -4,7 +4,7 @@ project(xfce4-dockbarx-plugin C)
 include(GNUInstallDirs)
 
 set(PLUGIN_ID "dockbarx")
-set(PLUGIN_VERSION "0.7.2")
+set(PLUGIN_VERSION "0.7.3")
 
 set(PLUGIN_LIB_DIR "${CMAKE_INSTALL_LIBDIR}/xfce4/panel/plugins")
 set(PLUGIN_DESKTOP_DIR "${CMAKE_INSTALL_DATAROOTDIR}/xfce4/panel/plugins")

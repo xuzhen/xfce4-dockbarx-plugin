@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+0.7.3:
+- Support xfce4-panel's dark mode
+- Better implementation of blocking autohide
+
 0.7.2:
 - Fixed expand mode
 - Improve settings dialog
