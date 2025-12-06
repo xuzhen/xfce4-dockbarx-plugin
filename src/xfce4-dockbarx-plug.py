@@ -88,6 +88,9 @@ class DockBarXFCEPlug(Gtk.Plug):
                               self.xfconf_dbus_changed,
                               dbus_interface="org.freedesktop.DBus")
 
+        dark_mode = self.xfconf_get_panels("dark-mode", False)
+        self.set_dark_mode(dark_mode)
+
         self.dockbar = db.DockBar(self)
         self.dockbar.set_orient(self.get_orient())
         self.config_bg()
@@ -132,12 +135,14 @@ class DockBarXFCEPlug(Gtk.Plug):
         return self.xfconf_get(self.dbx_prop, prop, default)
     def xfconf_get_panel (self, prop, default=None):
         return self.xfconf_get(self.panel_prop, prop, default)
+    def xfconf_get_panels (self, prop, default=None):
+        return self.xfconf_get("/panels/", prop, default)
 
     def xfconf_changed (self, channel, prop, val):
         if channel != "xfce4-panel": return
-        if self.panel_prop in prop and self.mode == 2:
+        if prop.startswith(self.panel_prop) and self.mode == 2:
             self.pattern_from_dbus()
-        elif self.dbx_prop in prop:
+        elif prop.startswith(self.dbx_prop):
             if "orient" in prop:  self.dockbar.set_orient(self.get_orient())
             elif "mode" in prop:  self.config_bg()
             elif "max-size" in prop:
@@ -154,12 +159,18 @@ class DockBarXFCEPlug(Gtk.Plug):
                     self.image_pattern(self.xfconf_get_dbx("image", ""))
             else:
                 self.pattern_from_dbus()
+        elif prop == "/panels/dark-mode":
+            self.set_dark_mode(val)
         self.queue_draw()
 
     def set_block_autohide (self):
         blocked = self.dockbar.globals.get_shown_popup() != None or \
                   self.dockbar.globals.gtkmenu != None
         self.app.notify_autohide(blocked)
+
+    def set_dark_mode (self, dark_mode):
+        s = Gtk.Settings.get_default()
+        s.set_property("gtk-application-prefer-dark-theme", dark_mode)
 
     # Terrible monkey patching... but this allows inhibiting autohide!
     def block_autohide_patch (self):
