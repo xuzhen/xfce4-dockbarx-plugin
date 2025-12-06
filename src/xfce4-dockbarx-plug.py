@@ -6,7 +6,7 @@
 #   Copyright (C) 2008-2016 Trent McPheron
 #   Copyright (C) 2008-2020 Matias Sars
 #   Copyright (C) 2020      Ted Alff
-#   Copyright (C) 2020-2023 Xu Zhen
+#   Copyright (C) 2020-2025 Xu Zhen
 #
 #   This file is part of DockbarX Xfce Panel Plugin.
 #
