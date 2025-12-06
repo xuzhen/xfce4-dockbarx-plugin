@@ -33,7 +33,7 @@ If you want to (or have to) install from source, you need the following dependen
 
 For Debian/Ubuntu users, the building dependencies could be installed by using:
 
-    sudo apt install gcc make cmake libglib2.0-dev libgtk-3-dev libxfce4panel-2.0-dev libxfconf-0-dev
+    sudo apt install gcc make cmake libglib2.0-dev libgtk-3-dev libxfce4panel-2.0-dev libxfconf-0-dev libxfce4ui-2-dev
 
 To configure, build, and install, run these commands:
 
