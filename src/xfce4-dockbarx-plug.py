@@ -363,7 +363,10 @@ class XfcePlugApp(Gtk.Application):
         iface = info.lookup_interface(DBUS_NAME)
         dbus = self.get_dbus_connection()
         dbus_path = self.get_dbus_object_path()
-        dbus.register_object(dbus_path, iface, self.dbus_method_call, None, None);
+        if hasattr(dbus, "register_object_with_closures2"):
+            dbus.register_object_with_closures2(dbus_path, iface, self.dbus_method_call, None, None);
+        else:
+            dbus.register_object(dbus_path, iface, self.dbus_method_call, None, None);
 
     def dbus_method_call(self, connection, sender, object_path, interface_name, method_name, parameters, invocation):
         ret = None
