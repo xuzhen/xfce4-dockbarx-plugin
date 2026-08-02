@@ -35,6 +35,9 @@ typedef struct {
     GDBusConnection *conn;
     guint sub_id;
     guint watch_id;
+    GPid pid;
+    gboolean embedded;
+    GMutex mutex;
 } DockbarXPlugin;
 
 #endif
