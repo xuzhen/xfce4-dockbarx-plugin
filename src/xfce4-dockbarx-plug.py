@@ -44,7 +44,7 @@ import urllib.parse
 
 import os
 
-DBUS_NAME="org.dockbar.plugins.xfce4panel"
+DBUS_NAME = "org.dockbar.plugins.xfce4panel"
 
 # A very minimal plug application that loads DockbarX
 # so that the embed plugin can, well, embed it.
@@ -307,18 +307,20 @@ class DockBarXFCEPlug(Gtk.Plug):
 
 class XfcePlugApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, application_id=DBUS_NAME, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
+        self._plugin_id = kwargs.pop('plugin_id', None)
+        application_id = "%s.plugin%d" % (DBUS_NAME, self._plugin_id) if self._plugin_id is not None else DBUS_NAME
+        super().__init__(*args, application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.window = None
         self.socket = None
-        self.plugin_id = None
+        self.plugin_id = self._plugin_id
         self.add_main_option("socket", ord("s"), GLib.OptionFlags.IN_MAIN, GLib.OptionArg.INT, "Socket ID", None)
         self.add_main_option("plugin_id", ord("i"), GLib.OptionFlags.IN_MAIN, GLib.OptionArg.INT, "Plugin ID", None)
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
-        self.register_dbus()
         
     def do_activate(self):
+        self.register_dbus()
         if not self.window:
             self.window = DockBarXFCEPlug(self, self.socket, self.plugin_id)
             self.add_window(self.window)
@@ -342,15 +344,20 @@ class XfcePlugApp(Gtk.Application):
         return 0
 
     def notify_autohide(self, blocked):
+        unique_dbus_name = "%s.plugin%d" % (DBUS_NAME, self.plugin_id)
         dbus = self.get_dbus_connection()
         dbus_path = self.get_dbus_object_path()
         args = GLib.Variant.new_tuple(GLib.Variant.new_boolean(blocked))
-        dbus.emit_signal(None, dbus_path, DBUS_NAME, "AutoHide", args)
+        dbus.emit_signal(None, dbus_path, unique_dbus_name, "AutoHide", args)
 
     def register_dbus(self):
+        if self.plugin_id is None:
+            logger.error("Plugin ID not set, cannot register D-Bus")
+            return
+        unique_dbus_name = "%s.plugin%d" % (DBUS_NAME, self.plugin_id)
         dbus_xml = \
             "<node>" \
-              "<interface name='%s'>" % DBUS_NAME + \
+              "<interface name='%s'>" % unique_dbus_name + \
                 "<method name='SetOrient'>" \
                   "<arg type='s' name='pos' direction='in'/>" \
                 "</method>" \
@@ -360,7 +367,7 @@ class XfcePlugApp(Gtk.Application):
               "</interface>" \
             "</node>"
         info = Gio.DBusNodeInfo.new_for_xml(dbus_xml)
-        iface = info.lookup_interface(DBUS_NAME)
+        iface = info.lookup_interface(unique_dbus_name)
         dbus = self.get_dbus_connection()
         dbus_path = self.get_dbus_object_path()
         if hasattr(dbus, "register_object_with_closures2"):
@@ -388,4 +395,16 @@ class XfcePlugApp(Gtk.Application):
 
 
 if __name__ == '__main__':
-    XfcePlugApp().run(sys.argv)
+    # Parse command line to get plugin_id before creating the application
+    plugin_id = None
+    args = sys.argv[1:]
+    for i, arg in enumerate(args):
+        if arg == '-i' and i + 1 < len(args):
+            try:
+                plugin_id = int(args[i + 1])
+            except ValueError:
+                pass
+            break
+
+    app = XfcePlugApp(plugin_id=plugin_id)
+    app.run(sys.argv)

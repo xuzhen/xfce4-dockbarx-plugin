@@ -25,10 +25,7 @@
 #include <errno.h>
 #include "config.h"
 
-static GObject *properties = NULL;
-static GMutex mutex;
-static GPid pid = 0;
-static gboolean embedded = FALSE;
+
 
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin);
 static void run_plug(DockbarXPlugin *dbx_plugin);
@@ -54,11 +51,6 @@ static gboolean dbx_plugin_check(G_GNUC_UNUSED GdkScreen *screen) {
         g_error_free(error);
         return FALSE;
     }
-    properties = g_object_new(PLUGIN_PROPERTIES_TYPE, NULL);
-    if (properties == NULL) {
-        g_critical("Failed to create properties gobject");
-        return FALSE;
-    }
     return TRUE;
 }
 
@@ -67,19 +59,26 @@ static void dbx_plugin_construct(XfcePanelPlugin *plugin) {
 
     dbx_plugin = g_slice_new0(DockbarXPlugin);
     dbx_plugin->plugin = plugin;
+    dbx_plugin->props = g_object_new(PLUGIN_PROPERTIES_TYPE, NULL);
     dbx_plugin->xfc = xfconf_channel_new_with_property_base("xfce4-panel", xfce_panel_plugin_get_property_base(plugin));
-    dbx_plugin->props = properties;
     dbx_plugin->conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
-    dbx_plugin->watch_id = g_bus_watch_name_on_connection(dbx_plugin->conn, "org.dockbar.plugins.xfce4panel", G_BUS_NAME_WATCHER_FLAGS_NONE, on_dbus_name_appared, on_dbus_name_vanished, dbx_plugin, NULL);
     dbx_plugin->sub_id = 0;
+    dbx_plugin->pid = 0;
+    dbx_plugin->embedded = FALSE;
+    g_mutex_init(&dbx_plugin->mutex);
 
-    prop_bind_xfconf(dbx_plugin->xfc, properties);
-    prop_connect_expand(properties, G_CALLBACK(set_plugin_expand), plugin);
+    gint unique_id = xfce_panel_plugin_get_unique_id(plugin);
+    gchar *dbus_name = g_strdup_printf("org.dockbar.plugins.xfce4panel.plugin%d", unique_id);
+    dbx_plugin->watch_id = g_bus_watch_name_on_connection(dbx_plugin->conn, dbus_name, G_BUS_NAME_WATCHER_FLAGS_NONE, on_dbus_name_appared, on_dbus_name_vanished, dbx_plugin, NULL);
+    g_free(dbus_name);
+
+    prop_bind_xfconf(dbx_plugin->xfc, dbx_plugin->props);
+    prop_connect_expand(dbx_plugin->props, G_CALLBACK(set_plugin_expand), plugin);
 
     create_dialogs(dbx_plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     xfce_panel_plugin_menu_show_about(plugin);
-    xfce_panel_plugin_set_expand(plugin, prop_get_expand(properties));
+    xfce_panel_plugin_set_expand(plugin, prop_get_expand(dbx_plugin->props));
 
     g_signal_connect(G_OBJECT(plugin), "configure-plugin", G_CALLBACK(on_configure_plugin), NULL);
     g_signal_connect(G_OBJECT(plugin), "about", G_CALLBACK(on_about), NULL);
@@ -96,8 +95,6 @@ static void dbx_plugin_construct(XfcePanelPlugin *plugin) {
 
     gtk_widget_show_all(GTK_WIDGET(plugin));
 
-    g_mutex_init(&mutex);
-
     determine_orient(dbx_plugin);
     run_plug(dbx_plugin);
 }
@@ -105,13 +102,13 @@ XFCE_PANEL_PLUGIN_REGISTER_WITH_CHECK(dbx_plugin_construct, dbx_plugin_check);
 
 // Starts DBX when the plugin starts, or when something kills it.
 static void run_plug(DockbarXPlugin *dbx_plugin) {
-    if (g_mutex_trylock(&mutex) == FALSE) {
+    if (g_mutex_trylock(&dbx_plugin->mutex) == FALSE) {
         return;
     }
     gint unique_id = xfce_panel_plugin_get_unique_id(dbx_plugin->plugin);
-    if (pid != 0) {
-        if (kill(pid, SIGINT) == -1) {
-            g_warning("Failed to stop DockbarX plug process %d: %s", pid, strerror(errno));
+    if (dbx_plugin->pid != 0) {
+        if (kill(dbx_plugin->pid, SIGINT) == -1) {
+            g_warning("Failed to stop DockbarX plug process %d: %s", dbx_plugin->pid, strerror(errno));
         }
     }
     gchar *argv[7] = {
@@ -124,16 +121,16 @@ static void run_plug(DockbarXPlugin *dbx_plugin) {
         NULL
     };
     GError *error = NULL;
-    if (g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &pid, &error) == FALSE) {
+    if (g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &dbx_plugin->pid, &error) == FALSE) {
         GtkWidget *dialog = gtk_message_dialog_new(NULL, 0, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("Failed to start DockbarX plug."));
         gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy(dialog);
         g_error_free(error);
-        pid = 0;
+        dbx_plugin->pid = 0;
     }
     g_free(argv[3]);
     g_free(argv[5]);
-    g_mutex_unlock(&mutex);
+    g_mutex_unlock(&dbx_plugin->mutex);
 }
 
 static gboolean determine_orient(DockbarXPlugin *dbx_plugin) {
@@ -200,8 +197,8 @@ static gboolean determine_orient(DockbarXPlugin *dbx_plugin) {
 
 static void reset_plug_orient(DockbarXPlugin *dbx_plugin) {
     if (determine_orient(dbx_plugin)) {
-        if (pid != 0 && embedded) {
-            kill(pid, SIGUSR1);
+        if (dbx_plugin->pid != 0 && dbx_plugin->embedded) {
+            kill(dbx_plugin->pid, SIGUSR1);
         } else {
             run_plug(dbx_plugin);
         }
@@ -226,11 +223,11 @@ static void on_screen_position_changed(G_GNUC_UNUSED XfcePanelPlugin *plugin, G_
 }
 
 static void on_plug_added(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin *dbx_plugin) {
-    embedded = TRUE;
+    dbx_plugin->embedded = TRUE;
 }
 
 static gboolean on_plug_removed(G_GNUC_UNUSED GtkSocket *socket, DockbarXPlugin *dbx_plugin) {
-    embedded = FALSE;
+    dbx_plugin->embedded = FALSE;
     run_plug(dbx_plugin);
     return TRUE;
 }
@@ -242,8 +239,7 @@ static void on_free_data(XfcePanelPlugin *plugin, DockbarXPlugin *dbx_plugin) {
     g_bus_unwatch_name(dbx_plugin->watch_id);
     g_object_unref(dbx_plugin->conn);
     g_slice_free(DockbarXPlugin, dbx_plugin);
-    g_mutex_clear(&mutex);
-    g_object_unref(properties);
+    g_mutex_clear(&dbx_plugin->mutex);
     xfconf_shutdown();
 }
 
@@ -257,8 +253,9 @@ static void on_about(G_GNUC_UNUSED XfcePanelPlugin *plugin, G_GNUC_UNUSED gpoint
 
 static void on_dbus_name_appared(GDBusConnection *conn, const gchar *name, const gchar *name_owner, gpointer user_data) {
     DockbarXPlugin *dbx_plugin = (DockbarXPlugin*)user_data;
-    dbx_plugin->sub_id = g_dbus_connection_signal_subscribe(conn, name_owner, name, "AutoHide", "/org/dockbar/plugins/xfce4panel", NULL, G_DBUS_SIGNAL_FLAGS_NONE, on_dbus_plugin_signal, dbx_plugin->plugin, NULL);
-
+    gchar *object_path = g_strdup_printf("/org/dockbar/plugins/xfce4panel/plugin%d", xfce_panel_plugin_get_unique_id(dbx_plugin->plugin));
+    dbx_plugin->sub_id = g_dbus_connection_signal_subscribe(conn, name_owner, name, "AutoHide", object_path, NULL, G_DBUS_SIGNAL_FLAGS_NONE, on_dbus_plugin_signal, dbx_plugin->plugin, NULL);
+    g_free(object_path);
 }
 
 static void on_dbus_name_vanished(GDBusConnection *conn, const gchar *name, gpointer user_data) {
